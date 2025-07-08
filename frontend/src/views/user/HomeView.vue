@@ -21,7 +21,13 @@
     </div>
 
     <div class="subDir">
-      <div class="subjects-container overflow-auto">
+      <!-- Show this message when there are no subjects -->
+      <div v-if="!subjects || subjects.length === 0" class="text-center text-gray-500 py-4">
+        No subjects available.
+      </div>
+
+      <!-- Show the subjects accordion if there are subjects -->
+      <div v-else class="subjects-container overflow-auto">
         <div class="accordion" id="subjectsAccordion">
           <div class="accordion-item" v-for="(subject, index) in subjects" :key="subject.name">
             <h3 class="accordion-header" :id="'heading' + index">
