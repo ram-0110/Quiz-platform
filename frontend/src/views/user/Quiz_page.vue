@@ -48,7 +48,7 @@
 
       <div class="row mt-3">
         <div class="col-12 text-center">
-          <RouterLink to="/quiz/start" class="btn btn-dark btn-sm px-3 py-1">
+          <RouterLink :to="`/quiz/start/${data.id}`" class="btn btn-dark btn-sm px-3 py-1">
             Start Quiz
           </RouterLink>
         </div>
