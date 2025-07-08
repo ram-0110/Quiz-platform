@@ -831,5 +831,24 @@ def submit_quiz(quiz_id):
         "total_questions": len(answers)
     }), 200
 
+
+@app.route('/api/quiz/result/<int:quiz_id>', methods=['GET'])
+@jwt_required(optional=True) 
+def get_quiz_result(quiz_id):
+    user_id = get_jwt_identity()  # or your user authentication system
+    user = User.query.filter_by(email=user_id).first()
+    print(user.id)
+    score = Score.query.filter_by(quiz_id=quiz_id, ).first()
+    if not score:
+        return jsonify({'message': 'Result not found'}), 404
+
+    return jsonify({
+        'quiz_id': score.quiz_id,
+        'total_score': score.total_score,
+        'remarks': score.remarks,
+        'timestamp': score.timestamp.isoformat()
+    }), 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)

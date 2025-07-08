@@ -10,10 +10,17 @@ import SignupPage from '@/views/user/SignupPage.vue'
 import admin_dashbord from '@/views/admin/admin_dashbord.vue'
 import add_quiz from '@/views/admin/add_quiz.vue'
 import edit_quiz from '@/views/admin/edit_quiz.vue'
+import result from '@/views/user/ResultPage.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
+    {
+      path: '/quiz/result/:quizId',
+      name: 'result',
+      component: result,
+      props: true,
+    },
     {
       path: '/',
       name: 'home',

@@ -1,7 +1,6 @@
 <template>
   <RouterLink :to="`/quiz/${props.item.quiz_id}`" class="card-link">
     <div class="card">
-      <p>{{ props.item.quiz_id }}</p>
       <div class="card-body">
         <h5 class="card-title">{{ quiz_name }}</h5>
         <h6 class="card-subtitle mb-2 text-muted">Time:{{ quiz_time }}</h6>

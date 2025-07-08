@@ -8,7 +8,6 @@
         <span class="timer">10:00</span>
       </div>
     </div>
-    <p>{{ selectedOptions }}</p>
     <!-- Question Card -->
     <div class="card quiz-card mb-4">
       <div class="card-body p-3 p-lg-4">
@@ -79,7 +78,7 @@ const submitQuiz = async () => {
 
   try {
     await api.post(`/quiz/submit/${quiz_id}/result`, { answers })
-    router.push('/dashboard')
+    router.push(`/quiz/result/${quiz_id}`)
   } catch (error) {
     console.error('Error submitting quiz:', error)
     alert('Failed to submit quiz.')
