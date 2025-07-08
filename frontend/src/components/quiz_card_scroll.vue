@@ -1,6 +1,7 @@
 <template>
-  <RouterLink to="/quiz" class="card-link">
+  <RouterLink :to="`/quiz/${props.item.quiz_id}`" class="card-link">
     <div class="card">
+      <p>{{ props.item.quiz_id }}</p>
       <div class="card-body">
         <h5 class="card-title">{{ quiz_name }}</h5>
         <h6 class="card-subtitle mb-2 text-muted">Time:{{ quiz_time }}</h6>
@@ -34,7 +35,7 @@ onMounted(async () => {
     quiz_name.value = data.quiz_data.quiz_name
     quiz_date.value = data.quiz_data.date_of_quiz
     quiz_time.value = data.quiz_data.time_duration
-
+    console.log(data.quiz_data)
     console.log('Fetched data:', data.message)
   } catch (error) {
     console.error('Error fetching card data:', error)
