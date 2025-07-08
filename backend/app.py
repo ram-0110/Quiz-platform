@@ -278,6 +278,30 @@ def about():
 
 
 # --------------------------------------------------------------------------------
+
+def get_unopted_subjects(user_id):
+    # Get subject IDs already opted by the user
+    opted_subject_ids = (
+        db.session.query(user_subject.c.subject_id)
+        .filter(user_subject.c.user_id == user_id)
+    )
+
+    # Now get subjects that are NOT in the opted list
+    unopted_subjects = Subject.query.filter(~Subject.id.in_(opted_subject_ids)).all()
+    return unopted_subjects
+
+def serialize_subject_with_chapters_and_counts(subject):
+    chapter_names = [chapter.name for chapter in subject.chapters]
+    quiz_count = sum(len(chapter.quizzes) for chapter in subject.chapters)
+
+    return {
+        "name": subject.name,
+        "topics": chapter_names,
+        "chapter_count": len(chapter_names),
+        "quiz_count": quiz_count
+    }
+
+
 @app.route('/api/home')
 @jwt_required()
 def home():
@@ -287,11 +311,17 @@ def home():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
+    subjects_user_did_not_opt_for = get_unopted_subjects(user.id)
+
+    # Include subject name, chapter names, and counts
+    unopted_subjects = [serialize_subject_with_chapters_and_counts(subject) for subject in subjects_user_did_not_opt_for]
+
     return jsonify({
         'username': user.username,
         'email': user.email,
         'is_admin': user.is_admin,
-        'message': 'Welcome to the home page!'
+        'message': "hi",
+        'unopted_subjects': unopted_subjects
     }), 200
 
 # --------------------------------------------------------------------------------
@@ -377,6 +407,26 @@ def add_subject():
     return jsonify({"message": "Subject added successfully"}), 200
 
 # --------------------------------------------------------------------------------
+@app.route('/api/add-stu-sub',methods=['POST'])
+@jwt_required()
+def link_stu_sub():
+    data = request.get_json()
+    subjectname = data.get("name")
+    current_user = get_jwt_identity()
+
+    user = User.query.filter_by(email=current_user).first()
+    subject = Subject.query.filter_by(name=subjectname).first()
+
+    if not user or not subject:
+        return jsonify({"error": "No user or subject found"}), 404
+
+    if subject not in user.subjects:
+        user.subjects.append(subject)
+        db.session.commit()
+
+    return jsonify({"message": "subject added successfully"}), 200
+
+
 
 @app.route('/api/add-chapter', methods=['POST'])
 @jwt_required()

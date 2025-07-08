@@ -41,6 +41,7 @@
     </div>
 
     <div class="subjects-container overflow-auto">
+      <p>{{ filteredSubjects }}</p>
       <div class="accordion" id="subjectsAccordion">
         <div
           class="accordion-item"
