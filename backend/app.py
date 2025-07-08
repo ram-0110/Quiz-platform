@@ -301,6 +301,7 @@ def serialize_subject_with_chapters_and_counts(subject):
         "quiz_count": quiz_count
     }
 
+# --------------------------------------------------------------------------------
 
 @app.route('/api/home')
 @jwt_required()
@@ -719,5 +720,42 @@ def dashboard_card_num():
         'message':'eveything okay',
         'quiz_data':quiz_data,
     }), 200
+
+# --------------------------------------------------------------------------------
+@app.route('/api/quiz/<int:quiz_id>')
+@jwt_required()
+def get_quiz_by_id(quiz_id):
+    quiz = Quiz.query.get(quiz_id)
+
+    if not quiz:
+        return jsonify({'error': 'Quiz not found'}), 404
+
+    chapter = quiz.chapter
+    subject = chapter.subject
+
+    return jsonify({
+        'id': quiz.id,
+        'quiz_name': quiz.quiz_name,
+        'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),
+        'time_duration': quiz.time_duration,
+        'remarks': quiz.remarks,
+
+        'chapter': {
+            'id': chapter.id,
+            'name': chapter.name,
+            'description': chapter.description
+        },
+
+        'subject': {
+            'id': subject.id,
+            'name': subject.name,
+            'description': subject.description
+        },
+
+        'message': 'done'
+    })
+
+
+
 if __name__ == "__main__":
     app.run(debug=True)

@@ -30,14 +30,16 @@ const router = createRouter({
       component: DashboardView,
     },
     {
-      path: '/quiz',
+      path: '/quiz/:quiz_id',
       name: 'quiz',
       component: Quiz_page,
+      props: true,
     },
     {
-      path: '/quiz/start',
+      path: '/quiz/start/:quiz_id',
       name: 'quiz-start',
       component: Quiz_start,
+      props: true,
     },
     {
       path: '/stats',
@@ -71,7 +73,6 @@ const router = createRouter({
     },
   ],
 })
-
 
 router.beforeEach((to, from, next) => {
   const publicPages = ['login', 'signup']

@@ -1,5 +1,4 @@
 <!-- quiz_start.vue -->
-
 <template>
   <div class="quiz-container py-3">
     <!-- Header -->
@@ -40,15 +39,18 @@
             style="width: 50%"
             aria-valuenow="50"
             aria-valuemin="0"
-            aria-valuemax="100">
-          </div>
+            aria-valuemax="100"
+          ></div>
         </div>
         <span class="progress-percentage ms-2">50%</span>
       </div>
       <div class="d-flex justify-content-center flex-wrap gap-1 nav-dots mt-3">
-        <button v-for="n in 10" :key="n"
+        <button
+          v-for="n in 10"
+          :key="n"
           class="btn question-nav-btn"
-          :class="n === 5 ? 'active' : ''">
+          :class="n === 5 ? 'active' : ''"
+        >
           {{ n }}
         </button>
       </div>
@@ -57,7 +59,22 @@
 </template>
 
 <script setup>
+import { onMounted } from 'vue'
+import { useRoute } from 'vue-router'
+import api from '@/axios/axios'
 import Questions from '@/components/questions_quiz.vue'
+
+const route = useRoute()
+
+onMounted(async () => {
+  const quiz_id = route.params.quiz_id
+  try {
+    const response = await api.get(`/quiz/${quiz_id}`)
+    console.log(response.data)
+  } catch (error) {
+    console.error('Error fetching quiz:', error)
+  }
+})
 </script>
 
 <style scoped>
@@ -189,7 +206,8 @@ import Questions from '@/components/questions_quiz.vue'
   transition: width 0.4s ease-in-out;
 }
 
-.progress-text, .progress-percentage {
+.progress-text,
+.progress-percentage {
   font-size: 0.8rem;
   color: #666;
   font-weight: 500;
