@@ -719,5 +719,7 @@ def dashboard_card_num():
         'message':'eveything okay',
         'quiz_data':quiz_data,
     }), 200
+
+
 if __name__ == "__main__":
     app.run(debug=True)
