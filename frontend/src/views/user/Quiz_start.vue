@@ -1,4 +1,3 @@
-<!-- quiz_start.vue -->
 <template>
   <div class="quiz-container py-3">
     <!-- Header -->
@@ -13,13 +12,23 @@
     <!-- Question Card -->
     <div class="card quiz-card mb-4">
       <div class="card-body p-3 p-lg-4">
-        <Questions />
+        <QuestionsQuiz
+          v-if="questions.length && questions[active_qes - 1]"
+          :question="questions[active_qes - 1]"
+          :selected="selectedOptions[active_qes - 1]"
+          @select="(selectedIndex) => handleOptionSelect(active_qes - 1, selectedIndex)"
+        />
+
         <div class="mt-3 d-flex gap-2 action-buttons">
           <div class="d-flex gap-2 me-auto">
-            <button class="btn btn-outline-secondary btn-sm">
+            <button class="btn btn-outline-secondary btn-sm" @click="clearOption">
               <span class="btn-text">Clear</span>
             </button>
-            <button class="btn btn-outline-secondary btn-sm">
+            <button
+              class="btn btn-outline-secondary btn-sm"
+              @click="nextQuestion"
+              :disabled="active_qes === questions.length"
+            >
               <span class="btn-text">Save & Next</span>
             </button>
           </div>
@@ -30,26 +39,13 @@
 
     <!-- Progress & Navigation -->
     <div class="text-center mt-4 footer-quiz">
-      <div class="d-flex align-items-center justify-content-center mb-2">
-        <span class="progress-text me-2">Progress</span>
-        <div class="progress rounded-pill mb-0" style="height: 4px; width: 40%">
-          <div
-            class="progress-bar"
-            role="progressbar"
-            style="width: 50%"
-            aria-valuenow="50"
-            aria-valuemin="0"
-            aria-valuemax="100"
-          ></div>
-        </div>
-        <span class="progress-percentage ms-2">50%</span>
-      </div>
       <div class="d-flex justify-content-center flex-wrap gap-1 nav-dots mt-3">
         <button
-          v-for="n in 10"
+          v-for="n in questions.length"
           :key="n"
           class="btn question-nav-btn"
-          :class="n === 5 ? 'active' : ''"
+          :class="{ active: n === active_qes }"
+          @click="setActiveQuestion(n)"
         >
           {{ n }}
         </button>
@@ -59,18 +55,41 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/axios/axios'
-import Questions from '@/components/questions_quiz.vue'
+import QuestionsQuiz from '@/components/questions_quiz.vue'
 
 const route = useRoute()
+const active_qes = ref(1)
+const questions = ref([])
+const selectedOptions = ref([])
+
+const setActiveQuestion = (index) => {
+  active_qes.value = index
+}
+
+const nextQuestion = () => {
+  if (active_qes.value < questions.value.length) {
+    active_qes.value++
+  }
+}
+
+// Function to handle option selection
+const handleOptionSelect = (questionIndex, selectedIndex) => {
+  selectedOptions.value[questionIndex] = selectedIndex
+}
+
+const clearOption = () => {
+  selectedOptions.value[active_qes.value - 1] = null
+}
 
 onMounted(async () => {
   const quiz_id = route.params.quiz_id
   try {
-    const response = await api.get(`/quiz/${quiz_id}`)
-    console.log(response.data)
+    const response = await api.get(`/quiz/start/${quiz_id}`)
+    questions.value = response.data
+    selectedOptions.value = Array(response.data.length).fill(null)
   } catch (error) {
     console.error('Error fetching quiz:', error)
   }

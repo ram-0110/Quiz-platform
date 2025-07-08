@@ -1,69 +1,93 @@
-<!-- questions_quiz.vue -->
+<script setup>
+import { ref, computed, watch } from 'vue'
+
+// Props
+const props = defineProps({
+  question: Object,
+  selected: [Number, Array], // could be a number or an array
+})
+
+const emit = defineEmits(['select'])
+
+const isMultipleChoice = computed(() => props.question.correct_option >= 10)
+
+const selectedOption = ref(
+  isMultipleChoice.value ? [...(props.selected || [])] : (props.selected ?? null),
+)
+
+// Watch for parent updates
+watch(
+  () => props.selected,
+  (val) => {
+    selectedOption.value = isMultipleChoice.value ? [...(val || [])] : val
+  },
+)
+
+// Dynamically extract options
+const dynamicOptions = computed(() => {
+  return [
+    props.question.option1,
+    props.question.option2,
+    props.question.option3,
+    props.question.option4,
+  ].filter(Boolean)
+})
+
+// Handle option select
+const toggleOption = (index) => {
+  if (isMultipleChoice.value) {
+    const current = [...selectedOption.value]
+    const idx = current.indexOf(index)
+    if (idx >= 0) {
+      current.splice(idx, 1) // remove
+    } else {
+      current.push(index) // add
+    }
+    selectedOption.value = current
+    emit('select', current)
+  } else {
+    selectedOption.value = index
+    emit('select', index)
+  }
+}
+</script>
+
 <template>
   <div class="question-container">
     <div class="question-header">
-      <span class="question-number">Question 1</span>
-      <span class="question-type">Multiple Choice</span>
+      <span class="question-number">Question</span>
+      <span class="question-type">{{
+        isMultipleChoice ? 'Multiple Choice' : 'Single Choice'
+      }}</span>
     </div>
 
-    <h4 class="question-text">What is the powerhouse of the cell?</h4>
+    <h4 class="question-text">{{ question.question_statement }}</h4>
 
-    <div class="options-container">
-      <div
-        v-for="(option, index) in options"
-        :key="index"
-        class="option"
-        :class="{ 'option-selected': selectedOption === index }"
-        @click="selectOption(index)"
-      >
-        <div class="radio-container">
-          <input
-            type="radio"
-            :id="'option' + index"
-            name="cell-question"
-            :value="option"
-            :checked="selectedOption === index"
-            @change="selectOption(index)"
-          />
-          <span class="custom-radio"></span>
-        </div>
-        <label :for="'option' + index" class="option-label">{{ option }}</label>
+    <div
+      v-for="(option, index) in dynamicOptions"
+      :key="index"
+      class="option"
+      :class="{
+        'option-selected': isMultipleChoice
+          ? selectedOption.includes(index)
+          : selectedOption === index,
+      }"
+      @click="toggleOption(index)"
+    >
+      <div class="radio-container">
+        <input
+          :type="isMultipleChoice ? 'checkbox' : 'radio'"
+          :id="'option' + index"
+          :name="'question' + question.id"
+          :checked="isMultipleChoice ? selectedOption.includes(index) : selectedOption === index"
+          @change="toggleOption(index)"
+        />
+        <span :class="isMultipleChoice ? 'custom-checkbox' : 'custom-radio'"></span>
       </div>
-    </div>
-
-    <div class="question-footer" v-if="showHints">
-      <div class="hint-container">
-        <button class="hint-button" @click="toggleHint" v-if="!hintVisible">
-          <i class="bi bi-lightbulb"></i> Show Hint
-        </button>
-        <div class="hint-text" v-if="hintVisible">
-          <i class="bi bi-lightbulb-fill"></i>
-          <span
-            >This organelle is responsible for cellular respiration and producing energy in the form
-            of ATP.</span
-          >
-        </div>
-      </div>
+      <label :for="'option' + index" class="option-label">{{ option }}</label>
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-
-const options = ref(['Mitochondria', 'Nucleus', 'Chloroplast', 'Ribosome'])
-const selectedOption = ref(null)
-const showHints = ref(true)
-const hintVisible = ref(false)
-
-const selectOption = (index) => {
-  selectedOption.value = index
-}
-
-const toggleHint = () => {
-  hintVisible.value = !hintVisible.value
-}
-</script>
 
 <style scoped>
 .question-container {
@@ -111,69 +135,49 @@ const toggleHint = () => {
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
 }
 
-.options-container {
-  margin: 1.25rem 0;
-}
-
-.option {
-  display: flex;
-  align-items: center;
-  padding: 0.7rem 1rem;
-  margin-bottom: 0.6rem;
-  border: 1px solid #e0e0e0;
-  border-radius: 6px;
-  background-color: #fff;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.option:hover {
-  background-color: #f9f9f9;
-  border-color: #d0d0d0;
-  transform: translateX(2px);
-}
-
-.option-selected {
-  background-color: #f0f0f0;
-  border-color: #c0c0c0;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
-}
-
 .radio-container {
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 18px;
-  margin-right: 10px;
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
 }
 
-input[type='radio'] {
+/* Hide native input */
+input[type='radio'],
+input[type='checkbox'] {
   opacity: 0;
   position: absolute;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   margin: 0;
   cursor: pointer;
   z-index: 2;
 }
 
-.custom-radio {
+/* Base for both */
+.custom-radio,
+.custom-checkbox {
   position: absolute;
   top: 0;
   left: 0;
   width: 18px;
   height: 18px;
+  background-color: #fff;
   border: 2px solid #aaa;
-  border-radius: 50%;
   transition: all 0.2s ease;
 }
 
-input[type='radio']:checked + .custom-radio {
-  border: 2px solid #000;
+/* Radio style */
+.custom-radio {
+  border-radius: 50%;
 }
 
+/* Checkbox style */
+.custom-checkbox {
+  border-radius: 4px;
+}
+
+/* Selected radio */
 input[type='radio']:checked + .custom-radio::after {
   content: '';
   position: absolute;
@@ -186,6 +190,42 @@ input[type='radio']:checked + .custom-radio::after {
   background-color: #000;
 }
 
+/* Selected checkbox */
+input[type='checkbox']:checked + .custom-checkbox {
+  background-color: #000;
+  border-color: #000;
+}
+
+input[type='checkbox']:checked + .custom-checkbox::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 9px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Option container */
+.option {
+  display: flex;
+  align-items: center;
+  padding: 0.7rem 1rem;
+  margin-bottom: 0.6rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  background-color: #fff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.option-selected {
+  background-color: #f0f0f0;
+  border-color: #c0c0c0;
+}
+
 .option-label {
   flex: 1;
   cursor: pointer;
@@ -194,64 +234,5 @@ input[type='radio']:checked + .custom-radio::after {
   color: #333;
   padding: 0.15rem 0;
   margin-bottom: 0;
-}
-
-.question-footer {
-  margin-top: 1.5rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
-}
-
-.hint-container {
-  display: flex;
-  justify-content: flex-start;
-}
-
-.hint-button {
-  background: none;
-  border: none;
-  color: #666;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0.4rem 0.6rem;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-}
-
-.hint-button:hover {
-  background-color: #f5f5f5;
-  color: #000;
-}
-
-.hint-text {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  background-color: #fffde7;
-  border: 1px solid #fff9c4;
-  border-radius: 5px;
-  padding: 0.6rem 0.8rem;
-  font-size: 0.85rem;
-  color: #666;
-  line-height: 1.5;
-}
-
-.bi-lightbulb,
-.bi-lightbulb-fill {
-  font-size: 0.9rem;
-  color: #ffc107;
-}
-
-@media (max-width: 576px) {
-  .option {
-    padding: 0.6rem 0.8rem;
-  }
-
-  .question-text {
-    font-size: 1rem;
-  }
 }
 </style>

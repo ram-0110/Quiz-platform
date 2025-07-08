@@ -755,7 +755,28 @@ def get_quiz_by_id(quiz_id):
         'message': 'done'
     })
 
+# --------------------------------------------------------------------------------
+@app.route('/api/quiz/start/<int:quiz_id>')
+@jwt_required()
+def start_quiz(quiz_id):
+    questions = Question.query.filter_by(quiz_id=quiz_id).all()
+    
+    if not questions:
+        return jsonify({"message": "No questions found for this quiz"}), 404
 
+    question_list = []
+    for q in questions:
+        question_list.append({
+            "id": q.id,
+            "question_statement": q.question_statement,
+            "option1": q.option1,
+            "option2": q.option2,
+            "option3": q.option3,
+            "option4": q.option4,
+            "correct_option": q.correct_option
+        })
+        
+    return jsonify(question_list), 200
 
 
 
