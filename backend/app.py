@@ -756,7 +756,7 @@ def get_quiz_by_id(quiz_id):
     })
 
 # --------------------------------------------------------------------------------
-@app.route('/api/quiz/start/<int:quiz_id>')
+@app.route('/api/quiz/start/<int:quiz_id>',methods=['GET'])
 @jwt_required()
 def start_quiz(quiz_id):
     questions = Question.query.filter_by(quiz_id=quiz_id).all()
@@ -775,10 +775,61 @@ def start_quiz(quiz_id):
             "option4": q.option4,
             "correct_option": q.correct_option
         })
-        
+
     return jsonify(question_list), 200
 
 
+@app.route('/api/quiz/submit/<int:quiz_id>/result', methods=['POST', 'OPTIONS'])
+@jwt_required(optional=True)  # optional=True allows OPTIONS without auth
+def submit_quiz(quiz_id):
+    if request.method == 'OPTIONS':
+        return jsonify({'ok': True}), 200  # respond to preflight
+
+    current_user_email = get_jwt_identity()
+    data = request.get_json()
+    
+    if not data or 'answers' not in data:
+        return jsonify({"error": "Missing answers"}), 400
+
+    # Fetch user
+    user = User.query.filter_by(email=current_user_email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    existing_score = Score.query.filter_by(quiz_id=quiz_id, user_id=user.id).first()
+    if existing_score:
+        return jsonify({"message": "You have already submitted this quiz."}), 409
+
+
+    answers = data['answers']
+    score = 0
+
+    for ans in answers:
+        question_id = ans.get('question_id')
+        selected_option = ans.get('selected_option')
+        if selected_option is None:
+            continue  # skip unanswered questions
+
+        question = db.session.get(Question, question_id)
+        if question and question.correct_option == selected_option:
+            score += 1
+
+    # Store the score
+    new_score = Score(
+        quiz_id=quiz_id,
+        user_id=user.id,
+        total_score=score,
+        remarks=f"Scored {score} out of {len(answers)}"
+    )
+    db.session.add(new_score)
+    db.session.commit()
+
+    print(score)
+    return jsonify({
+        "message": "Quiz submitted successfully!",
+        "score": score,
+        "total_questions": len(answers)
+    }), 200
 
 if __name__ == "__main__":
     app.run(debug=True)

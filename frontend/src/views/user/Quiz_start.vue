@@ -8,7 +8,7 @@
         <span class="timer">10:00</span>
       </div>
     </div>
-
+    <p>{{ selectedOptions }}</p>
     <!-- Question Card -->
     <div class="card quiz-card mb-4">
       <div class="card-body p-3 p-lg-4">
@@ -32,7 +32,7 @@
               <span class="btn-text">Save & Next</span>
             </button>
           </div>
-          <button class="btn btn-primary-dark btn-sm">Submit</button>
+          <button class="btn btn-primary-dark btn-sm" @click="submitQuiz">Submit</button>
         </div>
       </div>
     </div>
@@ -55,16 +55,37 @@
 </template>
 
 <script setup>
+import 'bootstrap/dist/css/bootstrap.min.css'
+import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios/axios'
 import QuestionsQuiz from '@/components/questions_quiz.vue'
 
 const route = useRoute()
+const router = useRouter()
 const active_qes = ref(1)
 const questions = ref([])
 const selectedOptions = ref([])
 
+const submitQuiz = async () => {
+  const quiz_id = route.params.quiz_id
+  if (!quiz_id) return alert('Quiz ID not found.')
+
+  const answers = questions.value.map((q, index) => ({
+    question_id: q.id,
+    selected_option: selectedOptions.value[index] ?? null,
+  }))
+
+  try {
+    await api.post(`/quiz/submit/${quiz_id}/result`, { answers })
+    router.push('/dashboard')
+  } catch (error) {
+    console.error('Error submitting quiz:', error)
+    alert('Failed to submit quiz.')
+    router.push('/dashboard')
+  }
+}
 const setActiveQuestion = (index) => {
   active_qes.value = index
 }
