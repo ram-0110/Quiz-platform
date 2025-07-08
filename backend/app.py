@@ -383,7 +383,7 @@ def dashboard_sub_quiz():
         chapter_name = chapter['name']
         for quiz in chapter['quizzes']:
             formatted_results.append({
-                'quiz id': quiz['id'],
+                'quiz_id': quiz['id'],
                 'chapterid': chapter_id,
                 'chaptername': chapter_name,
                 'dateofquiz': quiz['date_of_quiz'],
@@ -700,6 +700,24 @@ def get_quiz():
 
 
 # --------------------------------------------------------------------------------
+@app.route('/api/dashboard-cardnum', methods=['GET'])
+@jwt_required()
+def dashboard_card_num():
+    quiz_id = request.args.get('id')
 
+    quiz = Quiz.query.filter(Quiz.id == quiz_id).first()
+
+    quiz_data = {
+        'quiz_name': quiz.quiz_name,
+        'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),  # convert date to string
+        'time_duration': quiz.time_duration,
+        'chapter_id': quiz.chapter_id,
+    }
+    
+
+    return jsonify({
+        'message':'eveything okay',
+        'quiz_data':quiz_data,
+    }), 200
 if __name__ == "__main__":
     app.run(debug=True)

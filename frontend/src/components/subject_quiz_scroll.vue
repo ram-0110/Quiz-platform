@@ -28,28 +28,6 @@
           <div v-else class="quiz-items">
             <div v-for="(item, index) in obj_subj" :key="index">
               <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
-              <quiz-card-scroll :item="item" />
             </div>
           </div>
         </div>
@@ -99,7 +77,6 @@ onMounted(async () => {
     const response = await api.get('/dashboard-sub-quiz', {
       params: { subjectid: props.subject.id },
     })
-    console.log(response.data)
     obj_subj.value = response.data.results
   } catch (error) {
     console.error('Error fetching sub-quiz:', error)
@@ -157,7 +134,6 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
-
 .progress-bar-area {
   border-top: 1px solid #e2e2e2;
   padding-top: 1.1rem;

@@ -2,9 +2,11 @@
   <RouterLink to="/quiz" class="card-link">
     <div class="card">
       <div class="card-body">
-        <h5 class="card-title">Optics: Quiz 1</h5>
-        <h6 class="card-subtitle mb-2 text-muted">By prof name</h6>
-        <p class="card-text"><small class="text-muted">Date: 19|03|2025</small></p>
+        <h5 class="card-title">{{ quiz_name }}</h5>
+        <h6 class="card-subtitle mb-2 text-muted">Time:{{ quiz_time }}</h6>
+        <p class="card-text">
+          <small class="text-muted">Date: {{ quiz_date }}</small>
+        </p>
       </div>
     </div>
   </RouterLink>
@@ -12,7 +14,32 @@
 
 <script setup>
 import { RouterLink } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import api from '@/axios/axios'
+const quiz_name = ref('')
+const quiz_date = ref('')
+const quiz_time = ref('')
 
+const props = defineProps({
+  item: Object,
+})
+
+onMounted(async () => {
+  try {
+    const response = await api.get('/dashboard-cardnum', {
+      params: { id: props.item.quiz_id },
+    })
+    const data = response.data
+
+    quiz_name.value = data.quiz_data.quiz_name
+    quiz_date.value = data.quiz_data.date_of_quiz
+    quiz_time.value = data.quiz_data.time_duration
+
+    console.log('Fetched data:', data.message)
+  } catch (error) {
+    console.error('Error fetching card data:', error)
+  }
+})
 </script>
 
 <style scoped>

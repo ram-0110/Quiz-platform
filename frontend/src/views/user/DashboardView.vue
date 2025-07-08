@@ -9,10 +9,8 @@ const isLoading = ref(true)
 onMounted(async () => {
   try {
     const response = await api.get('/dashboard')
-    console.log(response.data)
     name.value = response.data.username
     subjects.value = response.data.subjects
-    console.log(subjects.value)
   } catch (error) {
     console.error('Error fetching data:', error)
   } finally {
@@ -48,8 +46,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-
-
 .dashboard-container {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #000;
