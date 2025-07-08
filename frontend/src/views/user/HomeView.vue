@@ -68,17 +68,24 @@
 
 <script setup>
 import PageHeader from '@/components/PageHeader.vue'
-
+import { useRouter } from 'vue-router'
 import api from '@/axios/axios'
 import { ref, onMounted } from 'vue'
+const router = useRouter()
+
 const message = ref(null)
 const subjects = ref(null)
 const newSubjectName = ref('')
 
 const addNewSubject = async () => {
   console.log(newSubjectName.value)
-  const response = await api.post('/add-stu-sub', { name: newSubjectName.value })
-  console.log(response)
+  try {
+    const response = await api.post('/add-stu-sub', { name: newSubjectName.value })
+    console.log(response)
+    router.push('/dashboard')
+  } catch (error) {
+    console.error('Error adding:', error)
+  }
 }
 
 onMounted(async () => {
