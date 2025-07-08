@@ -326,7 +326,6 @@ def home():
     }), 200
 
 # --------------------------------------------------------------------------------
-
 @app.route('/api/dashboard-sub-quiz')
 @jwt_required()
 def dashboard_sub_quiz():
@@ -337,63 +336,26 @@ def dashboard_sub_quiz():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
+    # Get quiz_ids already attempted by the user
+    attempted_quiz_ids = {score.quiz_id for score in user.attempts}
 
-    results = Chapter.query.filter_by(subject_id=subject_id).all()
-
-    results = [
-        {
-            'id': chapter.id,
-            'name': chapter.name,
-            'description': chapter.description,
-            'quizzes': [
-                {
-                    'id': quiz.id,
-                    'date_of_quiz': quiz.date_of_quiz,
-                    'time_duration': quiz.time_duration,
-                    'remarks': quiz.remarks
-                }
-                for quiz in chapter.quizzes
-            ]
-        }
-        for chapter in results
-    ]
-    results = Chapter.query.filter_by(subject_id=subject_id).all()
-
-    results = [
-        {
-            'id': chapter.id,
-            'name': chapter.name,
-            'description': chapter.description,
-            'quizzes': [
-                {
-                    'id': quiz.id,
-                    'date_of_quiz': quiz.date_of_quiz,
-                    'time_duration': quiz.time_duration,
-                    'remarks': quiz.remarks
-                }
-                for quiz in chapter.quizzes
-            ]
-        }
-        for chapter in results
-    ]
-
+    chapters = Chapter.query.filter_by(subject_id=subject_id).all()
     formatted_results = []
 
-    for chapter in results:
-        chapter_id = chapter['id']
-        chapter_name = chapter['name']
-        for quiz in chapter['quizzes']:
-            formatted_results.append({
-                'quiz_id': quiz['id'],
-                'chapterid': chapter_id,
-                'chaptername': chapter_name,
-                'dateofquiz': quiz['date_of_quiz'],
-                'timeduration': quiz['time_duration']
-            })
+    for chapter in chapters:
+        for quiz in chapter.quizzes:
+            if quiz.id not in attempted_quiz_ids:
+                formatted_results.append({
+                    'quiz_id': quiz.id,
+                    'chapterid': chapter.id,
+                    'chaptername': chapter.name,
+                    'dateofquiz': quiz.date_of_quiz,
+                    'timeduration': quiz.time_duration,
+                    'remarks': quiz.remarks
+                })
 
-    return jsonify(
-        results=formatted_results
-    ), 200
+    return jsonify(results=formatted_results), 200
+
 # --------------------------------------------------------------------------------
 @app.route('/api/add-subject', methods=['POST'])
 @jwt_required()
