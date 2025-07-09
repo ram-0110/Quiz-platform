@@ -217,11 +217,13 @@ def dashboard():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-
+    # Get all subjects from DB
+    all_subjects = Subject.query.all()
     subject_list = [
-            {"id": subject.id, "name": subject.name}
-            for subject in user.subjects
-        ]
+        {"id": subject.id, "name": subject.name}
+        for subject in all_subjects
+    ]
+
     return jsonify({
         'username': user.username,
         'email': user.email,
@@ -324,17 +326,11 @@ def home():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    subjects_user_did_not_opt_for = get_unopted_subjects(user.id)
-
-    # Include subject name, chapter names, and counts
-    unopted_subjects = [serialize_subject_with_chapters_and_counts(subject) for subject in subjects_user_did_not_opt_for]
-
     return jsonify({
         'username': user.username,
         'email': user.email,
         'is_admin': user.is_admin,
         'message': "hi",
-        'unopted_subjects': unopted_subjects
     }), 200
 
 # --------------------------------------------------------------------------------

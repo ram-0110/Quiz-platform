@@ -1,107 +1,11 @@
 <template>
   <div class="dashboard-container">
     <PageHeader title="Explore!" subtitle="Add new Subjects" />
-
-    <div class="subDir">
-      <!-- Add Subject Form -->
-      <div class="add-subject-section">
-        <div class="add-subject-form">
-          <h4>Add New Subject</h4>
-          <div class="form-group">
-            <input
-              v-model="newSubjectName"
-              type="text"
-              placeholder="Subject name"
-              class="form-input"
-            />
-            <button @click="addNewSubject" class="add-btn">Add Subject</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div class="subDir">
-      <!-- Show this message when there are no subjects -->
-      <div v-if="!subjects || subjects.length === 0" class="text-center text-gray-500 py-4">
-        No subjects available.
-      </div>
-
-      <!-- Show the subjects accordion if there are subjects -->
-      <div v-else class="subjects-container overflow-auto">
-        <div class="accordion" id="subjectsAccordion">
-          <div class="accordion-item" v-for="(subject, index) in subjects" :key="subject.name">
-            <h3 class="accordion-header" :id="'heading' + index">
-              <button
-                class="accordion-button collapsed"
-                type="button"
-                data-bs-toggle="collapse"
-                :data-bs-target="'#collapse' + index"
-                aria-expanded="false"
-                :aria-controls="'collapse' + index"
-              >
-                <div class="subject-header">
-                  <span class="subject-index">{{ index + 1 }}</span>
-                  <span class="subject-name">{{ subject.name }}</span>
-                  <span class="topic-count">{{ subject.topics.length }} topics</span>
-                </div>
-              </button>
-            </h3>
-            <div
-              :id="'collapse' + index"
-              class="accordion-collapse collapse"
-              :aria-labelledby="'heading' + index"
-              data-bs-parent="#subjectsAccordion"
-            >
-              <div class="accordion-body">
-                <div class="topic-list">
-                  <div class="topic-item" v-for="(topic, i) in subject.topics" :key="i">
-                    <div class="topic-content">
-                      <span class="topic-index">{{ index + 1 }}.{{ i + 1 }}</span>
-                      <button @click="setActiveSubject(topic)" class="no-btn">
-                        <span class="topic-name">{{ topic }}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
 <script setup>
 import PageHeader from '@/components/PageHeader.vue'
-import { useRouter } from 'vue-router'
-import api from '@/axios/axios'
-import { ref, onMounted } from 'vue'
-
-const router = useRouter()
-const message = ref(null)
-const subjects = ref(null)
-const newSubjectName = ref('')
-
-const addNewSubject = async () => {
-  try {
-    const response = await api.post('/add-stu-sub', { name: newSubjectName.value })
-    console.log(response)
-    router.push('/dashboard')
-  } catch (error) {
-    console.error('Error adding:', error)
-  }
-}
-
-onMounted(async () => {
-  try {
-    const response = await api.get('/home')
-    message.value = response.data.message
-    subjects.value = response.data.unopted_subjects
-  } catch (error) {
-    console.error('Error fetching data:', error)
-  }
-})
 </script>
 
 <style scoped>
