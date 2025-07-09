@@ -108,8 +108,11 @@ import { ref, computed } from 'vue'
 import Single_Option from '@/components/admin/Single_Option.vue'
 import api from '@/axios/axios'
 import { useRouter } from 'vue-router'
-const problem = ref([])
+import { useToast } from 'vue-toastification' // ✅ import toast
+
+const toast = useToast() // ✅ initialize toast
 const router = useRouter()
+const problem = ref([])
 
 const updateQuestion = (index, question) => {
   problem.value[index] = question
@@ -138,7 +141,7 @@ const currentDate = computed(() =>
 const addSingleOption = () => {
   questions.value.push({
     id: nextId++,
-    type: 'single-choice', // <-- Updated to match your requirement
+    type: 'single-choice',
     text: '',
     options: [],
     correctAnswer: null,
@@ -165,21 +168,23 @@ const removeQuestionById = (id) => {
 
 const saveQuiz = async () => {
   if (!isFormValid.value) {
-    alert('Please complete the form and add at least one question.')
+    toast.warning('Please complete the form and add at least one question.') // ✅ replaces alert
     return
-  } else {
-    try {
-      const response = await api.post('/add-quizzes', {
-        subject: subjectName.value,
-        chapter: chapterName.value,
-        quiz: quizName.value,
-        problem: problem.value,
-      })
-      console.log('Quiz saved successfully:', response.data)
-      router.push("/admin")
-    } catch (error) {
-      console.error('Error saving quiz:', error)
-    }
+  }
+
+  try {
+    const response = await api.post('/add-quizzes', {
+      subject: subjectName.value,
+      chapter: chapterName.value,
+      quiz: quizName.value,
+      problem: problem.value,
+    })
+    console.log('Quiz saved successfully:', response.data)
+    toast.success('Quiz saved successfully!') // ✅ success toast
+    router.push('/admin')
+  } catch (error) {
+    console.error('Error saving quiz:', error)
+    toast.error('Failed to save quiz') // ✅ error toast
   }
 
   console.log('Quiz saved', {

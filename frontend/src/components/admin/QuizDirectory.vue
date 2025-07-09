@@ -35,6 +35,9 @@
           </tr>
         </thead>
         <tbody>
+          <tr v-if="filteredTasks.length === 0">
+            <td colspan="6" class="text-center text-muted py-3">No quizzes available</td>
+          </tr>
           <tr v-for="task in filteredTasks" :key="task.id" class="task-row">
             <td>{{ task.id }}</td>
             <td>
@@ -72,6 +75,9 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import api from '@/axios/axios'
+import { useToast } from 'vue-toastification' // ✅ import toast
+
+const toast = useToast() // ✅ initialize toast
 
 const props = defineProps({
   chapter: {

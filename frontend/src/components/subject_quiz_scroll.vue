@@ -68,6 +68,9 @@
 import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import QuizCardScroll from './quiz_card_scroll.vue'
 import api from '@/axios/axios'
+import { useToast } from 'vue-toastification' // ✅ import toast
+
+const toast = useToast() // ✅ initialize toast
 
 const props = defineProps(['subject'])
 const obj_subj = ref(null)
@@ -80,6 +83,7 @@ onMounted(async () => {
     obj_subj.value = response.data.results
   } catch (error) {
     console.error('Error fetching sub-quiz:', error)
+    toast.error('Failed to load subject quizzes')
   }
 })
 
@@ -89,9 +93,6 @@ const showLeft = ref(false)
 const showRight = ref(true)
 const CARD_WIDTH = 210 // 200px card width + 10px gap
 
-/**
- * Scroll the container left by 5 card widths
- */
 function scrollLeft() {
   if (!scrollArea.value) return
 
@@ -101,9 +102,6 @@ function scrollLeft() {
   })
 }
 
-/**
- * Scroll the container right by 5 card widths
- */
 function scrollRight() {
   if (!scrollArea.value) return
 

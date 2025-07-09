@@ -96,7 +96,9 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios/axios'
 import QuestionsQuiz from '@/components/questions_quiz.vue'
+import { useToast } from 'vue-toastification' // ✅ import toast
 
+const toast = useToast() // ✅ initialize toast
 const route = useRoute()
 const router = useRouter()
 const active_qes = ref(1)
@@ -105,7 +107,10 @@ const selectedOptions = ref([])
 
 const submitQuiz = async () => {
   const quiz_id = route.params.quiz_id
-  if (!quiz_id) return alert('Quiz ID not found.')
+  if (!quiz_id) {
+    toast.warning('Quiz ID not found.') // ✅ replaces alert
+    return
+  }
 
   const answers = questions.value.map((q, index) => ({
     question_id: q.id,
@@ -125,16 +130,16 @@ const submitQuiz = async () => {
     backdrops.forEach((el) => el.remove())
 
     document.body.classList.remove('modal-open')
-    document.body.style.removeProperty('padding-right') // optional: removes extra padding added by Bootstrap
+    document.body.style.removeProperty('padding-right') // optional
 
     // Submit the quiz
     await api.post(`/quiz/submit/${quiz_id}/result`, { answers })
 
-    // Navigate
+    toast.success('Quiz submitted successfully!') // ✅ success toast
     router.push(`/quiz/result/${quiz_id}`)
   } catch (error) {
     console.error('Error submitting quiz:', error)
-    alert('Failed to submit quiz.')
+    toast.error('Failed to submit quiz.') // ✅ error toast
     router.push('/dashboard')
   }
 }
@@ -166,9 +171,11 @@ onMounted(async () => {
     selectedOptions.value = Array(response.data.length).fill(null)
   } catch (error) {
     console.error('Error fetching quiz:', error)
+    toast.error('Failed to load quiz.') // ✅ toast on error
   }
 })
 </script>
+
 
 <style scoped>
 .quiz-container {

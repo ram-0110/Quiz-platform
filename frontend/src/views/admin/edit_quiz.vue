@@ -92,7 +92,9 @@ import { useRoute, useRouter } from 'vue-router'
 import Single_Option from '@/components/admin/Single_Option.vue'
 import multiple_option from '@/components/admin/multiple_option.vue'
 import api from '@/axios/axios'
+import { useToast } from 'vue-toastification' // ✅ Import toast
 
+const toast = useToast() // ✅ Init toast
 const route = useRoute()
 const router = useRouter()
 const quizId = route.params.id
@@ -122,7 +124,7 @@ onMounted(async () => {
         question: item.question_statement,
         options: [item.option1, item.option2, item.option3, item.option4],
         correctOption: item.correct_option,
-        type: 'single-choice', // Or determine type if your API supports both
+        type: 'single-choice', // Or determine type if needed
       }
     })
 
@@ -130,6 +132,7 @@ onMounted(async () => {
     nextId = questions.value.length + 1
   } catch (error) {
     console.error('Error fetching quiz data:', error)
+    toast.error('Failed to load quiz data') // ✅ Error toast on load
   }
 })
 
@@ -178,7 +181,7 @@ const removeQuestionById = (id) => {
 
 const saveQuiz = async () => {
   if (!isFormValid.value) {
-    alert('Please complete the form and add at least one question.')
+    toast.warning('Please complete the form and add at least one question.') // ✅ replaces alert
     return
   }
 
@@ -190,9 +193,11 @@ const saveQuiz = async () => {
       problem: problem.value,
     })
     console.log('Quiz saved successfully:', response.data)
+    toast.success('Quiz updated successfully!') // ✅ success toast
     router.push('/admin')
   } catch (error) {
     console.error('Error saving quiz:', error)
+    toast.error('Failed to update quiz') // ✅ error toast
   }
 }
 </script>

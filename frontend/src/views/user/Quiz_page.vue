@@ -62,18 +62,21 @@ import { RouterLink } from 'vue-router'
 import { reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/axios/axios'
-const data = reactive({})
+import { useToast } from 'vue-toastification' // ✅ Import toast
 
+const toast = useToast()
+const data = reactive({})
 const route = useRoute()
 
 onMounted(async () => {
   const quiz_id = route.params.quiz_id
   try {
     const response = await api.get(`/quiz/${quiz_id}`)
-    Object.assign(data, response.data) // update reactive object
+    Object.assign(data, response.data)
     console.log(data.chapter)
   } catch (error) {
     console.error('Error fetching quiz:', error)
+    toast.error('Failed to load quiz')
   }
 })
 </script>

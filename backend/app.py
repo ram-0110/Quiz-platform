@@ -810,6 +810,64 @@ def get_quiz_result(quiz_id):
         'remarks': score.remarks,
         'timestamp': score.timestamp.isoformat()
     }), 200
+@app.route('/api/stats/static', methods=['GET'])
+@jwt_required()
+def get_static_stats():
+    user_mail = get_jwt_identity()
+    user = User.query.filter_by(email=user_mail).first()
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    user_id = user.id
+    data = {
+        "subject": [],
+        "chapter": [],
+        "quiz": []
+    }
+
+    # Subject-wise
+    subjects = Subject.query.all()
+    for subject in subjects:
+        total_score = 0
+        quiz_count = 0
+        for chapter in subject.chapters:
+            for quiz in chapter.quizzes:
+                score = Score.query.filter_by(user_id=user_id, quiz_id=quiz.id).first()
+                if score and score.total_score is not None:
+                    total_score += score.total_score
+                    quiz_count += 1
+        data["subject"].append({
+            "label": subject.name,
+            "score": round(total_score / quiz_count, 2) if quiz_count else 0
+        })
+
+    # Chapter-wise for subject_id = 1
+    chapters = Chapter.query.filter_by(subject_id=1).all()
+    for chapter in chapters:
+        total_score = 0
+        quiz_count = 0
+        for quiz in chapter.quizzes:
+            score = Score.query.filter_by(user_id=user_id, quiz_id=quiz.id).first()
+            if score and score.total_score is not None:
+                total_score += score.total_score
+                quiz_count += 1
+        data["chapter"].append({
+            "label": chapter.name,
+            "score": round(total_score / quiz_count, 2) if quiz_count else 0
+        })
+
+    # Quiz-wise for chapter_id = 1
+    quizzes = Quiz.query.filter_by(chapter_id=1).all()
+    for quiz in quizzes:
+        score = Score.query.filter_by(user_id=user_id, quiz_id=quiz.id).first()
+        data["quiz"].append({
+            "label": quiz.quiz_name,
+            "score": score.total_score if score and score.total_score is not None else 0
+        })
+
+    return jsonify(data)
+
 
 
 if __name__ == "__main__":

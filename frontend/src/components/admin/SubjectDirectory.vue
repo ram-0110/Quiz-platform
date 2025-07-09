@@ -103,13 +103,13 @@
         ></button>
       </div>
 
-      <div class="offcanvas-body small minimal-form">
+      <div class="offcanvas-body small minimal-form p-4">
         <form class="login-form d-flex flex-column" @submit="handleSubmit">
-          <label for="subjectName" class="form-label subtitle">Subject Name</label>
+          <label for="subjectName" class="form-label subtitle m-1">Subject Name</label>
           <input
             type="text"
             id="subjectName"
-            class="form-control minimal-input"
+            class="form-control minimal-input mb-3"
             placeholder="Subject Name"
             v-model="form.subjectName"
             required
@@ -136,22 +136,22 @@
         ></button>
       </div>
 
-      <div class="offcanvas-body small minimal-form">
+      <div class="offcanvas-body small minimal-form p-4">
         <form class="login-form-2 d-flex flex-column" @submit="add_chapter">
-          <label for="subjectName" class="form-label subtitle">Subject Name</label>
+          <label for="subjectName" class="form-label subtitle m-1">Subject Name</label>
           <input
             type="text"
             id="subjectName"
-            class="form-control minimal-input"
+            class="form-control minimal-input mb-3"
             placeholder="Subject Name"
             v-model="add_chap_form.subjectName"
             required
           />
-          <label for="chapterName" class="form-label subtitle">Chapter Name</label>
+          <label for="chapterName" class="form-label subtitle m-1">Chapter Name</label>
           <input
             type="text"
             id="chapterName"
-            class="form-control minimal-input"
+            class="form-control minimal-input mb-3"
             placeholder="Chapter Name"
             v-model="add_chap_form.chapterName"
             required
@@ -237,82 +237,46 @@ onMounted(async () => {
   }
 })
 </script>
-
 <style scoped>
-/* Form Styles */
-.login-form {
-  max-height: 50vh;
-  gap: 1rem;
-}
-
-.login-form-2 {
-  gap: 1rem;
-}
-
-.login-form input,
-.login-form-2 input {
-  padding: 0.75rem 1rem;
-  font-size: 0.9rem;
-  border: 1px solid #ddd;
-  border-radius: 0.5rem;
-  outline: none;
-  transition: border-color 0.2s ease;
-}
-
 .no-btn {
   background: none;
   border: none;
   font-size: inherit;
-  padding: 0;
-  cursor: pointer;
 }
 
 .minimal-form {
   background-color: #fff;
   color: #000;
-  max-width: 400px;
-  padding: 1.5rem;
+  max-width: 20vw;
 }
 
-.form-label {
-  margin-bottom: 0.5rem;
-  margin-top: 0;
-}
-
-/* Inputs */
 .minimal-input {
   background-color: transparent;
   border: 1px solid #000;
   color: #000;
   border-radius: 0.25rem;
-  padding: 0.75rem 1rem;
-  margin-bottom: 1rem;
+  padding: 0.5rem 0.75rem;
 }
-
 .minimal-input::placeholder {
   color: #666;
   font-style: italic;
 }
-
 .minimal-input:focus {
   box-shadow: none;
   border-color: #000;
 }
 
-/* Button */
 .minimal-btn {
   background-color: #000;
   border: 1px solid #000;
   color: #ffffff;
   border-radius: 0.25rem;
-  padding: 0.75rem 2rem;
-  margin-top: 0.5rem;
+  padding: 0.4rem 1.8rem;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
   font-size: 0.875rem;
 }
-
 .minimal-btn:hover,
 .minimal-btn:focus {
   background-color: #242424;
@@ -320,22 +284,19 @@ onMounted(async () => {
   box-shadow: none;
 }
 
-/* Container */
 .subject-selector {
   border: 1px solid #e2e2e2;
   border-radius: 8px;
   background-color: #fff;
   margin-bottom: 2rem;
-  padding: 1.5rem;
 }
 
-/* Header */
 .header {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.5rem;
-  padding-bottom: 1.5rem;
+  padding-bottom: 1rem;
   border-bottom: 1px solid #e2e2e2;
 }
 
@@ -343,8 +304,6 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid #e2e2e2;
 }
 
 .title {
@@ -357,13 +316,12 @@ onMounted(async () => {
 .subtitle {
   font-size: 0.875rem;
   color: #666;
-  margin: 0.5rem 0 0 0;
+  margin: 0.25rem 0 0 0;
 }
 
 .action-container {
   display: flex;
   justify-content: flex-end;
-  gap: 0.5rem;
 }
 
 .add-button {
@@ -371,7 +329,7 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   height: 2.5rem;
-  padding: 0 1.25rem;
+  padding: 0 1rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: #fff;
@@ -380,16 +338,13 @@ onMounted(async () => {
   border-radius: 0.375rem;
   transition: background-color 150ms ease;
 }
-
 .add-button:hover {
   background-color: #333;
 }
 
-/* Search */
 .search-container {
   flex: 1;
-  max-width: 400px;
-  margin-bottom: 1.5rem;
+  max-width: 300px;
 }
 
 .search-wrapper {
@@ -399,7 +354,7 @@ onMounted(async () => {
 
 .search-icon {
   position: absolute;
-  left: 1rem;
+  left: 0.75rem;
   top: 50%;
   transform: translateY(-50%);
   color: #666;
@@ -409,29 +364,27 @@ onMounted(async () => {
 .search-input {
   width: 100%;
   height: 2.5rem;
-  padding: 0 1rem 0 2.5rem;
+  padding: 0 0.75rem 0 2.25rem;
   font-size: 0.875rem;
   border: 1px solid #e2e2e2;
   border-radius: 0.375rem;
   background-color: #fff;
   transition: all 150ms ease;
 }
-
 .search-input:focus {
   outline: none;
   border-color: #999;
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05);
 }
-
 .search-input::placeholder {
   color: #999;
 }
 
-/* Subjects Accordion */
 .subjects-container {
   border: 1px solid #e2e2e2;
   border-radius: 0.5rem;
   overflow: hidden;
+  margin-top: 1rem;
   max-height: 40vh;
 }
 
@@ -439,13 +392,12 @@ onMounted(async () => {
   border: none;
   border-bottom: 1px solid #e2e2e2;
 }
-
 .accordion-item:last-child {
   border-bottom: none;
 }
 
 .accordion-button {
-  padding: 1.25rem 1.5rem;
+  padding: 1rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: #333;
@@ -455,12 +407,10 @@ onMounted(async () => {
   width: 100%;
   text-align: left;
 }
-
 .accordion-button:not(.collapsed) {
   color: #000;
   background-color: #f8f8f8;
 }
-
 .accordion-button:focus {
   box-shadow: none;
   border-color: transparent;
@@ -476,32 +426,26 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  margin-right: 1rem;
+  width: 1.5rem;
+  margin-right: 0.75rem;
   font-size: 0.75rem;
   font-weight: 500;
   color: #666;
-  background-color: #f5f5f5;
-  border-radius: 50%;
 }
-
 .subject-name {
   flex: 1;
   font-weight: 500;
-  margin-right: 1rem;
 }
 
 .topic-count {
   margin-left: auto;
   font-size: 0.75rem;
-  padding: 0.375rem 0.75rem;
+  padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
   background-color: #f5f5f5;
   color: #666;
 }
 
-/* Topics */
 .accordion-body {
   padding: 0;
 }
@@ -514,16 +458,14 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 1rem 1.5rem;
+  padding: 0.75rem 1rem;
   border-bottom: 1px solid #f5f5f5;
   cursor: pointer;
   transition: background-color 150ms ease;
 }
-
 .topic-item:last-child {
   border-bottom: none;
 }
-
 .topic-item:hover {
   background-color: #f8f8f8;
 }
@@ -538,23 +480,19 @@ onMounted(async () => {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
+  width: 2.25rem;
   font-size: 0.75rem;
   font-weight: 500;
   color: #666;
-  margin-right: 1rem;
 }
 
 .topic-name {
   text-decoration: none;
   background: none;
+  padding-right: 70vw;
   border: none;
   font-size: 0.875rem;
   color: #333;
-  cursor: pointer;
-  padding: 0;
-  text-align: left;
-  flex: 1;
 }
 
 .topic-arrow {
@@ -562,9 +500,7 @@ onMounted(async () => {
   color: #999;
   opacity: 0;
   transition: opacity 150ms ease;
-  margin-left: 1rem;
 }
-
 .topic-item:hover .topic-arrow {
   opacity: 1;
 }
