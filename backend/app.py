@@ -316,7 +316,6 @@ def serialize_subject_with_chapters_and_counts(subject):
     }
 
 # --------------------------------------------------------------------------------
-
 @app.route('/api/home')
 @jwt_required()
 def home():
@@ -326,11 +325,36 @@ def home():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
+    scores_data = []
+    for score in user.attempts:  # ← this is valid because of your existing relationship
+        quiz = score.quiz
+        chapter = quiz.chapter
+        subject = chapter.subject
+
+        scores_data.append({
+            'score_id': score.id,
+            'total_score': score.total_score,
+            'timestamp': score.timestamp.strftime('%Y-%m-%d %H:%M:%S'),
+            'quiz': {
+                'quiz_id': quiz.id,
+                'quiz_name': quiz.quiz_name,
+                'date_of_quiz': quiz.date_of_quiz.strftime('%Y-%m-%d'),
+            },
+            'chapter': {
+                'chapter_id': chapter.id,
+                'chapter_name': chapter.name,
+            },
+            'subject': {
+                'subject_id': subject.id,
+                'subject_name': subject.name,
+            }
+        })
+
     return jsonify({
         'username': user.username,
         'email': user.email,
         'is_admin': user.is_admin,
-        'message': "hi",
+        'scores': scores_data,
     }), 200
 
 # --------------------------------------------------------------------------------
@@ -810,16 +834,19 @@ def get_quiz_result(quiz_id):
     user_id = get_jwt_identity()  # or your user authentication system
     user = User.query.filter_by(email=user_id).first()
     print(user.id)
-    score = Score.query.filter_by(quiz_id=quiz_id, ).first()
+    score = Score.query.filter_by(quiz_id=quiz_id, user_id=user.id).first()
     if not score:
         return jsonify({'message': 'Result not found'}), 404
 
     return jsonify({
         'quiz_id': score.quiz_id,
+        'quiz_name': score.quiz.quiz_name,
         'total_score': score.total_score,
         'remarks': score.remarks,
         'timestamp': score.timestamp.isoformat()
     }), 200
+
+
 @app.route('/api/stats/static', methods=['GET'])
 @jwt_required()
 def get_static_stats():

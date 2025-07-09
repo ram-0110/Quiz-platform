@@ -1,14 +1,80 @@
 <template>
   <div class="dashboard-container">
-    <PageHeader title="Explore!" subtitle="Add new Subjects" />
+    <header class="header">
+      <div>
+        <h1 class="title">Explore!</h1>
+        <p class="subtitle">Your Quiz Performances</p>
+      </div>
+    </header>
+
+    <div v-if="loading" class="loading-state">
+      <p>Loading your scores...</p>
+    </div>
+
+    <div v-else-if="scores.length === 0" class="empty-state">
+      <p>No scores found.</p>
+      <p class="suggestion">Take some quizzes to see your performance here.</p>
+    </div>
+
+    <div v-else class="scores-container">
+      <div
+        v-for="score in scores"
+        :key="score.score_id"
+        class="score-card"
+        @click="goToResult(score.quiz.quiz_id)"
+        role="button"
+        tabindex="0"
+      >
+        <h3 class="score-title">
+          {{ score.subject.subject_name }} → {{ score.chapter.chapter_name }}
+        </h3>
+        <p class="quiz-meta">Quiz: {{ score.quiz.quiz_name }} ({{ score.quiz.date_of_quiz }})</p>
+        <p class="score-value">
+          Score: <strong>{{ score.total_score }}</strong>
+        </p>
+        <p class="timestamp">Taken on: {{ score.timestamp }}</p>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
+import api from '@/axios/axios'
+import { useRouter } from 'vue-router'
+const scores = ref([])
+const loading = ref(true)
+
+const router = useRouter()
+
+function goToResult(quizId) {
+  router.push(`/quiz/result/${quizId}`)
+}
+onMounted(async () => {
+  try {
+    const response = await api.get('/home')
+    scores.value = response.data.scores || []
+  } catch (error) {
+    console.error('Error fetching scores:', error)
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <style scoped>
+.score-card {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background-color: #ffffff;
+  padding: 1.25rem;
+  cursor: pointer;
+}
+
+.score-card:hover {
+  background-color: #f9f9f9;
+}
 .dashboard-container {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #000;
@@ -16,202 +82,89 @@ import PageHeader from '@/components/PageHeader.vue'
   max-width: 92vw;
   margin: 0 auto;
   padding: 1.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   border: 1px solid #e2e2e2;
   border-radius: 8px;
 }
 
-.subDir {
-  border-bottom: 1px solid #e2e2e2;
-  margin-bottom: 2rem;
-  padding-bottom: 2rem;
-}
-
-.add-subject-section {
-  margin-bottom: 24px;
-  padding: 20px;
-  border: 1px solid #e0e0e0;
-  border-radius: 4px;
-  background: white;
-}
-
-.add-subject-form h4 {
-  margin: 0 0 16px 0;
-  font-size: 18px;
-  font-weight: 600;
-  color: black;
-}
-
-.form-group {
+.header {
   display: flex;
-  gap: 12px;
-  align-items: center;
-}
-
-.form-input {
-  flex: 1;
-  padding: 10px 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: black;
-}
-
-.add-btn {
-  background: black;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  font-size: 14px;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.add-btn:hover {
-  background: #333;
-}
-
-.add-btn:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.no-btn {
-  background: none;
-  border: none;
-  font-size: inherit;
-}
-
-.subjects-container {
-  border: 1px solid #e2e2e2;
-  border-radius: 0.5rem;
-  overflow: hidden;
-  margin-top: 1rem;
-  max-height: 40vh;
-}
-
-.accordion-item {
-  border: none;
-  border-bottom: 1px solid #e2e2e2;
-}
-
-.accordion-item:last-child {
-  border-bottom: none;
-}
-
-.accordion-button {
-  padding: 1rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #333;
-  background-color: #fff;
-  box-shadow: none;
-  border: none;
-  width: 100%;
-  text-align: left;
-}
-
-.accordion-button:not(.collapsed) {
-  color: #000;
-  background-color: #f8f8f8;
-}
-
-.accordion-button:focus {
-  box-shadow: none;
-  border-color: transparent;
-}
-
-.subject-header {
-  display: flex;
-  align-items: center;
-  width: 100%;
-}
-
-.subject-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.5rem;
-  margin-right: 0.75rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #666;
-}
-
-.subject-name {
-  flex: 1;
-  font-weight: 500;
-}
-
-.topic-count {
-  margin-left: auto;
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 0.25rem;
-  background-color: #f5f5f5;
-  color: #666;
-}
-
-.accordion-body {
-  padding: 0;
-}
-
-.topic-list {
-  border-top: 1px solid #e2e2e2;
-}
-
-.topic-item {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #f5f5f5;
-  cursor: pointer;
-  transition: background-color 150ms ease;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e2e2;
 }
 
-.topic-item:last-child {
-  border-bottom: none;
+.title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.2;
 }
 
-.topic-item:hover {
-  background-color: #f8f8f8;
-}
-
-.topic-content {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.topic-index {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #666;
-}
-
-.topic-name {
+.subtitle {
   font-size: 0.875rem;
-  color: #333;
+  color: #666;
+  margin: 0.25rem 0 0 0;
 }
 
-.topic-arrow {
+.loading-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 150px;
+  color: #757575;
+  font-size: 0.95rem;
+}
+
+.empty-state {
+  background-color: #fafafa;
+  border: 1px solid #eeeeee;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  margin: 2rem 0;
+}
+
+.suggestion {
+  color: #757575;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+}
+
+.scores-container {
+  margin-top: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.score-card {
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  background-color: #ffffff;
+  padding: 1.25rem;
+}
+
+.score-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #212121;
+  margin-bottom: 0.25rem;
+}
+
+.quiz-meta {
+  font-size: 0.875rem;
+  color: #555;
+  margin-bottom: 0.25rem;
+}
+
+.score-value {
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.timestamp {
   font-size: 0.75rem;
-  color: #999;
-  opacity: 0;
-  transition: opacity 150ms ease;
-}
-
-.topic-item:hover .topic-arrow {
-  opacity: 1;
+  color: #888;
 }
 </style>

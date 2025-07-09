@@ -30,7 +30,7 @@
           <div class="result-details">
             <div class="detail-item">
               <span class="detail-label">Quiz ID:</span>
-              <span class="detail-value">{{ result.quiz_id }}</span>
+              <span class="detail-value">{{ result.quiz_name }}</span>
             </div>
             <div class="detail-item">
               <span class="detail-label">Remarks:</span>
