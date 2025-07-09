@@ -176,12 +176,11 @@ onMounted(async () => {
 })
 </script>
 
-
 <style scoped>
 .quiz-container {
   max-width: 900px;
-  margin: 0 auto;
-  padding: 0 1rem;
+  margin: 5vh auto;
+  padding: auto 1rem;
 }
 
 /* Header */
