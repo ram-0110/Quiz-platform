@@ -91,6 +91,8 @@ const logout = () => {
   localStorage.removeItem('access_token')
   localStorage.removeItem('refresh_token')
   localStorage.removeItem('username')
+  localStorage.removeItem('quiz_start_time')
+  localStorage.removeItem('quiz_duration')
   router.push('/login')
 }
 </script>

@@ -5,7 +5,7 @@
       <h4 class="mb-0 fw-medium quiz-title">Quiz 1: Optics</h4>
       <div class="time-display">
         <i class="bi bi-clock me-1"></i>
-        <span class="timer">10:00</span>
+        <span class="timer">{{ timer }}</span>
       </div>
     </div>
     <!-- Question Card -->
@@ -76,7 +76,7 @@
               aria-label="Close"
             ></button>
           </div>
-          <div class="modal-body"><P>save and sibmit changes once made they cant be undo!!</P></div>
+          <div class="modal-body"><p>save and sibmit changes once made they cant be undo!!</p></div>
           <div class="modal-footer">
             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary-dark btn-sm" @click="submitQuiz">
@@ -92,23 +92,70 @@
 <script setup>
 import 'bootstrap/dist/css/bootstrap.min.css'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import api from '@/axios/axios'
 import QuestionsQuiz from '@/components/questions_quiz.vue'
-import { useToast } from 'vue-toastification' // ✅ import toast
+import { useToast } from 'vue-toastification'
 
-const toast = useToast() // ✅ initialize toast
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
+
 const active_qes = ref(1)
 const questions = ref([])
 const selectedOptions = ref([])
 
+const timeLeft = ref(0)
+const timer = ref('00:00')
+let timerInterval = null
+
+// Converts "MM:SS" to seconds
+const parseDuration = (durationStr) => {
+  const [mins, secs] = durationStr.split(':').map(Number)
+  return mins * 60 + secs
+}
+
+// Converts seconds to "MM:SS"
+const formatTime = (seconds) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+}
+
+// Start timer and store timestamp in localStorage
+const startTimer = (durationInSeconds) => {
+  const now = Math.floor(Date.now() / 1000)
+  localStorage.setItem('quiz_start_time', now)
+  localStorage.setItem('quiz_duration', durationInSeconds)
+
+  runCountdown(durationInSeconds)
+}
+
+// Main countdown logic
+const runCountdown = (remainingSeconds) => {
+  timeLeft.value = remainingSeconds
+  timer.value = formatTime(timeLeft.value)
+
+  if (timerInterval) clearInterval(timerInterval)
+  timerInterval = setInterval(() => {
+    timeLeft.value--
+    timer.value = formatTime(timeLeft.value)
+
+    if (timeLeft.value <= 0) {
+      clearInterval(timerInterval)
+      localStorage.removeItem('quiz_start_time')
+      localStorage.removeItem('quiz_duration')
+      submitQuiz()
+    }
+  }, 1000)
+}
+
+// Submit the quiz
 const submitQuiz = async () => {
   const quiz_id = route.params.quiz_id
   if (!quiz_id) {
-    toast.warning('Quiz ID not found.') // ✅ replaces alert
+    toast.warning('Quiz ID not found.')
     return
   }
 
@@ -118,32 +165,29 @@ const submitQuiz = async () => {
   }))
 
   try {
-    // Hide modal if it's open
     const modalEl = document.getElementById('exampleModal')
     if (modalEl) {
       const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)
       modalInstance.hide()
     }
 
-    // 🔥 Force-remove modal backdrop and modal-open class from body
-    const backdrops = document.querySelectorAll('.modal-backdrop')
-    backdrops.forEach((el) => el.remove())
-
+    document.querySelectorAll('.modal-backdrop').forEach((el) => el.remove())
     document.body.classList.remove('modal-open')
-    document.body.style.removeProperty('padding-right') // optional
+    document.body.style.removeProperty('padding-right')
 
-    // Submit the quiz
     await api.post(`/quiz/submit/${quiz_id}/result`, { answers })
-
-    toast.success('Quiz submitted successfully!') // ✅ success toast
+    localStorage.removeItem('quiz_start_time')
+    localStorage.removeItem('quiz_duration')
+    toast.success('Quiz submitted successfully!')
     router.push(`/quiz/result/${quiz_id}`)
   } catch (error) {
     console.error('Error submitting quiz:', error)
-    toast.error('Failed to submit quiz.') // ✅ error toast
+    toast.error('Failed to submit quiz.')
     router.push('/dashboard')
   }
 }
 
+// Navigation and options
 const setActiveQuestion = (index) => {
   active_qes.value = index
 }
@@ -154,7 +198,6 @@ const nextQuestion = () => {
   }
 }
 
-// Function to handle option selection
 const handleOptionSelect = (questionIndex, selectedIndex) => {
   selectedOptions.value[questionIndex] = selectedIndex
 }
@@ -163,16 +206,42 @@ const clearOption = () => {
   selectedOptions.value[active_qes.value - 1] = null
 }
 
+// Load quiz
 onMounted(async () => {
   const quiz_id = route.params.quiz_id
   try {
     const response = await api.get(`/quiz/start/${quiz_id}`)
-    questions.value = response.data
-    selectedOptions.value = Array(response.data.length).fill(null)
+    questions.value = response.data[0].questions || response.data
+    selectedOptions.value = Array(questions.value.length).fill(null)
+
+    const durationStr = response.data[0].time
+    const totalDuration = parseDuration(durationStr)
+
+    const savedStart = localStorage.getItem('quiz_start_time')
+    const savedDuration = localStorage.getItem('quiz_duration')
+
+    if (savedStart && savedDuration) {
+      const now = Math.floor(Date.now() / 1000)
+      const elapsed = now - parseInt(savedStart)
+      const remaining = parseInt(savedDuration) - elapsed
+
+      if (remaining > 0) {
+        runCountdown(remaining)
+      } else {
+        // Time expired during reload
+        submitQuiz()
+      }
+    } else {
+      startTimer(totalDuration)
+    }
   } catch (error) {
     console.error('Error fetching quiz:', error)
-    toast.error('Failed to load quiz.') // ✅ toast on error
+    toast.error('Failed to load quiz.')
   }
+})
+
+onUnmounted(() => {
+  if (timerInterval) clearInterval(timerInterval)
 })
 </script>
 

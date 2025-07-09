@@ -734,7 +734,8 @@ def get_quiz_by_id(quiz_id):
 @jwt_required()
 def start_quiz(quiz_id):
     questions = Question.query.filter_by(quiz_id=quiz_id).all()
-    
+    quiz=Quiz.query.filter_by(id=quiz_id).first()
+    print(quiz.time_duration)
     if not questions:
         return jsonify({"message": "No questions found for this quiz"}), 404
 
@@ -747,7 +748,8 @@ def start_quiz(quiz_id):
             "option2": q.option2,
             "option3": q.option3,
             "option4": q.option4,
-            "correct_option": q.correct_option
+            "correct_option": q.correct_option,
+            'time':quiz.time_duration,
         })
 
     return jsonify(question_list), 200
