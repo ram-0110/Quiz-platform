@@ -41,7 +41,6 @@
     </div>
 
     <div class="subjects-container overflow-auto">
-      <p>{{ filteredSubjects }}</p>
       <div class="accordion" id="subjectsAccordion">
         <div
           class="accordion-item"
@@ -104,13 +103,13 @@
         ></button>
       </div>
 
-      <div class="offcanvas-body small minimal-form p-4">
+      <div class="offcanvas-body small minimal-form">
         <form class="login-form d-flex flex-column" @submit="handleSubmit">
-          <label for="subjectName" class="form-label subtitle m-1">Subject Name</label>
+          <label for="subjectName" class="form-label subtitle">Subject Name</label>
           <input
             type="text"
             id="subjectName"
-            class="form-control minimal-input mb-3"
+            class="form-control minimal-input"
             placeholder="Subject Name"
             v-model="form.subjectName"
             required
@@ -137,22 +136,22 @@
         ></button>
       </div>
 
-      <div class="offcanvas-body small minimal-form p-4">
+      <div class="offcanvas-body small minimal-form">
         <form class="login-form-2 d-flex flex-column" @submit="add_chapter">
-          <label for="subjectName" class="form-label subtitle m-1">Subject Name</label>
+          <label for="subjectName" class="form-label subtitle">Subject Name</label>
           <input
             type="text"
             id="subjectName"
-            class="form-control minimal-input mb-3"
+            class="form-control minimal-input"
             placeholder="Subject Name"
             v-model="add_chap_form.subjectName"
             required
           />
-          <label for="chapterName" class="form-label subtitle m-1">Chapter Name</label>
+          <label for="chapterName" class="form-label subtitle">Chapter Name</label>
           <input
             type="text"
             id="chapterName"
-            class="form-control minimal-input mb-3"
+            class="form-control minimal-input"
             placeholder="Chapter Name"
             v-model="add_chap_form.chapterName"
             required
@@ -240,10 +239,18 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+/* Form Styles */
 .login-form {
-  max-height: 5vh;
+  max-height: 50vh;
+  gap: 1rem;
 }
-.login-form input {
+
+.login-form-2 {
+  gap: 1rem;
+}
+
+.login-form input,
+.login-form-2 input {
   padding: 0.75rem 1rem;
   font-size: 0.9rem;
   border: 1px solid #ddd;
@@ -251,29 +258,42 @@ onMounted(async () => {
   outline: none;
   transition: border-color 0.2s ease;
 }
+
 .no-btn {
   background: none;
   border: none;
   font-size: inherit;
+  padding: 0;
+  cursor: pointer;
 }
+
 .minimal-form {
   background-color: #fff;
   color: #000;
-  max-width: 20vw;
+  max-width: 400px;
+  padding: 1.5rem;
+}
+
+.form-label {
+  margin-bottom: 0.5rem;
+  margin-top: 0;
 }
 
 /* Inputs */
-n.minimal-input {
+.minimal-input {
   background-color: transparent;
   border: 1px solid #000;
   color: #000;
   border-radius: 0.25rem;
-  padding: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
 }
+
 .minimal-input::placeholder {
   color: #666;
   font-style: italic;
 }
+
 .minimal-input:focus {
   box-shadow: none;
   border-color: #000;
@@ -285,7 +305,8 @@ n.minimal-input {
   border: 1px solid #000;
   color: #ffffff;
   border-radius: 0.25rem;
-  padding: 0.4rem 1.8rem;
+  padding: 0.75rem 2rem;
+  margin-top: 0.5rem;
   transition:
     background-color 0.2s ease,
     color 0.2s ease;
@@ -298,12 +319,14 @@ n.minimal-input {
   color: #ffffff;
   box-shadow: none;
 }
+
 /* Container */
 .subject-selector {
   border: 1px solid #e2e2e2;
   border-radius: 8px;
   background-color: #fff;
   margin-bottom: 2rem;
+  padding: 1.5rem;
 }
 
 /* Header */
@@ -312,7 +335,7 @@ n.minimal-input {
   justify-content: space-between;
   align-items: flex-start;
   margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
+  padding-bottom: 1.5rem;
   border-bottom: 1px solid #e2e2e2;
 }
 
@@ -320,6 +343,8 @@ n.minimal-input {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e2e2e2;
 }
 
 .title {
@@ -332,12 +357,13 @@ n.minimal-input {
 .subtitle {
   font-size: 0.875rem;
   color: #666;
-  margin: 0.25rem 0 0 0;
+  margin: 0.5rem 0 0 0;
 }
 
 .action-container {
   display: flex;
   justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .add-button {
@@ -345,7 +371,7 @@ n.minimal-input {
   align-items: center;
   justify-content: center;
   height: 2.5rem;
-  padding: 0 1rem;
+  padding: 0 1.25rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: #fff;
@@ -362,7 +388,8 @@ n.minimal-input {
 /* Search */
 .search-container {
   flex: 1;
-  max-width: 300px;
+  max-width: 400px;
+  margin-bottom: 1.5rem;
 }
 
 .search-wrapper {
@@ -372,7 +399,7 @@ n.minimal-input {
 
 .search-icon {
   position: absolute;
-  left: 0.75rem;
+  left: 1rem;
   top: 50%;
   transform: translateY(-50%);
   color: #666;
@@ -382,7 +409,7 @@ n.minimal-input {
 .search-input {
   width: 100%;
   height: 2.5rem;
-  padding: 0 0.75rem 0 2.25rem;
+  padding: 0 1rem 0 2.5rem;
   font-size: 0.875rem;
   border: 1px solid #e2e2e2;
   border-radius: 0.375rem;
@@ -405,7 +432,6 @@ n.minimal-input {
   border: 1px solid #e2e2e2;
   border-radius: 0.5rem;
   overflow: hidden;
-  margin-top: 1rem;
   max-height: 40vh;
 }
 
@@ -419,7 +445,7 @@ n.minimal-input {
 }
 
 .accordion-button {
-  padding: 1rem;
+  padding: 1.25rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 500;
   color: #333;
@@ -450,22 +476,26 @@ n.minimal-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
-  margin-right: 0.75rem;
+  width: 2rem;
+  height: 2rem;
+  margin-right: 1rem;
   font-size: 0.75rem;
   font-weight: 500;
   color: #666;
+  background-color: #f5f5f5;
+  border-radius: 50%;
 }
 
 .subject-name {
   flex: 1;
   font-weight: 500;
+  margin-right: 1rem;
 }
 
 .topic-count {
   margin-left: auto;
   font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
+  padding: 0.375rem 0.75rem;
   border-radius: 0.25rem;
   background-color: #f5f5f5;
   color: #666;
@@ -484,7 +514,7 @@ n.minimal-input {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid #f5f5f5;
   cursor: pointer;
   transition: background-color 150ms ease;
@@ -508,19 +538,23 @@ n.minimal-input {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2.25rem;
+  width: 3rem;
   font-size: 0.75rem;
   font-weight: 500;
   color: #666;
+  margin-right: 1rem;
 }
 
 .topic-name {
   text-decoration: none;
   background: none;
-  padding-right: 90vw;
   border: none;
   font-size: 0.875rem;
   color: #333;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+  flex: 1;
 }
 
 .topic-arrow {
@@ -528,6 +562,7 @@ n.minimal-input {
   color: #999;
   opacity: 0;
   transition: opacity 150ms ease;
+  margin-left: 1rem;
 }
 
 .topic-item:hover .topic-arrow {

@@ -43,22 +43,22 @@
       </button>
     </div>
 
-    <div
+    <!-- <div
       v-if="obj_subj && obj_subj.length > 0"
       class="d-flex align-items-center ms-3 progress-bar-area"
     >
-      <h5 class="course-footer me-3 mb-0">Progress:</h5>
+      <h5 class="course-footer me-3 mb-0"></h5>
       <div class="progress minimal-progress">
         <div
           class="progress-bar"
           role="progressbar"
-          :style="`width: 50%; background-color: #000000`"
+          :style="`width: 100%; background-color: #000000`"
           aria-valuenow="50"
           aria-valuemin="0"
           aria-valuemax="100"
         ></div>
       </div>
-    </div>
+    </div> -->
 
     <!-- <hr class="divider-line" /> -->
   </div>

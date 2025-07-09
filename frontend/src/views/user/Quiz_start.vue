@@ -31,7 +31,14 @@
               <span class="btn-text">Save & Next</span>
             </button>
           </div>
-          <button class="btn btn-primary-dark btn-sm" @click="submitQuiz">Submit</button>
+          <button
+            type="button"
+            class="btn btn-primary-dark btn-sm"
+            data-bs-toggle="modal"
+            data-bs-target="#exampleModal"
+          >
+            Submit
+          </button>
         </div>
       </div>
     </div>
@@ -48,6 +55,35 @@
         >
           {{ n }}
         </button>
+      </div>
+    </div>
+
+    <div
+      class="modal fade"
+      id="exampleModal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Conformation</h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body"><P>save and sibmit changes once made they cant be undo!!</P></div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary-dark btn-sm" @click="submitQuiz">
+              Submit
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -77,7 +113,24 @@ const submitQuiz = async () => {
   }))
 
   try {
+    // Hide modal if it's open
+    const modalEl = document.getElementById('exampleModal')
+    if (modalEl) {
+      const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl)
+      modalInstance.hide()
+    }
+
+    // 🔥 Force-remove modal backdrop and modal-open class from body
+    const backdrops = document.querySelectorAll('.modal-backdrop')
+    backdrops.forEach((el) => el.remove())
+
+    document.body.classList.remove('modal-open')
+    document.body.style.removeProperty('padding-right') // optional: removes extra padding added by Bootstrap
+
+    // Submit the quiz
     await api.post(`/quiz/submit/${quiz_id}/result`, { answers })
+
+    // Navigate
     router.push(`/quiz/result/${quiz_id}`)
   } catch (error) {
     console.error('Error submitting quiz:', error)
@@ -85,6 +138,7 @@ const submitQuiz = async () => {
     router.push('/dashboard')
   }
 }
+
 const setActiveQuestion = (index) => {
   active_qes.value = index
 }

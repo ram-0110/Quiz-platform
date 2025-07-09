@@ -46,7 +46,6 @@
         </h3>
 
         <div v-for="(question, index) in questions" :key="question.id" class="question-wrapper">
-          <p>{{ question.correctOption }}</p>
           <div v-if="question.correctOption < 10">
             <Single_Option
               :index="index + 1"
