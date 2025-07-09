@@ -42,16 +42,26 @@ const handleSubmit = async () => {
 
     const accessToken = response.data.access_token
     const refreshToken = response.data.refresh_token
+    const username = response.data.username
+
     localStorage.setItem('access_token', accessToken)
     localStorage.setItem('refresh_token', refreshToken)
+    localStorage.setItem('username', username) // ✅ store this
+
     toast.success('Login successful!')
 
-    router.push('/dashboard')
+    if (username === 'admin') {
+      router.push('/admin') // ✅ Go to admin dashboard
+    } else {
+      router.push('/dashboard') // ✅ Regular user
+    }
+
   } catch (error) {
     console.error('Error during login:', error)
     toast.error('Invalid email or password')
   }
 }
+
 </script>
 
 <style scoped>

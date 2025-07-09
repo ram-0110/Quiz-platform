@@ -67,32 +67,42 @@ const router = createRouter({
       path: '/admin',
       name: 'admin',
       component: admin_dashbord,
+      meta: { isAdmin: true },
     },
     {
       path: '/admin/add-quiz',
       name: 'add-quiz',
       component: add_quiz,
+      meta: { isAdmin: true },
     },
     {
       path: '/admin/edit_quiz/:id',
       name: 'edit-quiz',
       component: edit_quiz,
+      meta: { isAdmin: true },
     },
   ],
 })
 
 router.beforeEach((to, from, next) => {
   const publicPages = ['login', 'signup']
-  const token = localStorage.getItem('access_token') // Use the correct key for your token
+  const token = localStorage.getItem('access_token')
+  const username = localStorage.getItem('username')
 
+  // Redirect logged-in users away from login/signup
   if (token && publicPages.includes(to.name)) {
-    // If logged in, redirect away from login/signup to dashboard
     return next({ name: 'dashboard' })
   }
 
+  // Block access to all routes if not logged in
   if (!token && !publicPages.includes(to.name)) {
-    // Not logged in and trying to access protected page
     return next({ name: 'login' })
+  }
+
+  // Block admin pages for non-admin users
+  if (to.meta.isAdmin && username !== 'admin') {
+    
+    return next({ name: 'dashboard' }) // or a 403 page
   }
 
   next()

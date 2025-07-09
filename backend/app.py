@@ -182,18 +182,30 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
+    # ✅ Static Admin Login
+    if email == 'admin@gmail.com' and password == 'admin':
+        access_token = create_access_token(identity=email)
+        refresh_token = create_refresh_token(identity=email)
+        return jsonify({
+            'access_token': access_token,
+            'refresh_token': refresh_token,
+            'username': 'admin'
+        }), 200
+
+    # ✅ Normal user from database
     user = User.query.filter_by(email=email).first()
 
     if not user or not check_password_hash(user.password, password):
-        return jsonify({'message': 'Invalid email or password', 'error': 'invalid_credentials'}), 401
+        return jsonify({'message': 'Invalid email or password'}), 401
 
     access_token = create_access_token(identity=email)
     refresh_token = create_refresh_token(identity=user.id)
-    # Include CORS headers in response
-    response = jsonify(access_token=access_token, refresh_token=refresh_token)
-    response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
-    response.headers.add('Access-Control-Allow-Credentials', 'true')
-    return response, 200
+
+    return jsonify({
+        'access_token': access_token,
+        'refresh_token': refresh_token,
+        'username': user.email
+    }), 200
 
 # --------------------------------------------------------------------------------
 @app.route('/api/dashboard')
