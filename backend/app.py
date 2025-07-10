@@ -846,7 +846,6 @@ def get_quiz_result(quiz_id):
         'timestamp': score.timestamp.isoformat()
     }), 200
 
-
 @app.route('/api/stats/static', methods=['GET'])
 @jwt_required()
 def get_static_stats():
@@ -857,53 +856,100 @@ def get_static_stats():
         return jsonify({"error": "User not found"}), 404
 
     user_id = user.id
-    data = {
-        "subject": [],
-        "chapter": [],
-        "quiz": []
-    }
 
-    # Subject-wise
-    subjects = Subject.query.all()
-    for subject in subjects:
-        total_score = 0
-        quiz_count = 0
-        for chapter in subject.chapters:
-            for quiz in chapter.quizzes:
-                score = Score.query.filter_by(user_id=user_id, quiz_id=quiz.id).first()
-                if score and score.total_score is not None:
-                    total_score += score.total_score
-                    quiz_count += 1
-        data["subject"].append({
-            "label": subject.name,
-            "score": round(total_score / quiz_count, 2) if quiz_count else 0
-        })
+    # 1. Quiz-wise score (scored vs total)
+    quiz_scores = (
+        db.session.query(
+            Quiz.id,
+            Quiz.quiz_name,
+            Score.total_score,
+            db.func.count(Question.id).label('total_marks')
+        )
+        .join(Score, Quiz.id == Score.quiz_id)
+        .join(Question, Quiz.id == Question.quiz_id)
+        .filter(Score.user_id == user_id)
+        .group_by(Quiz.id, Score.total_score)
+        .all()
+    )
+    quiz_wise = [
+        {
+            "quiz_id": qid,
+            "quiz_name": name,
+            "scored": score,
+            "total_marks": total,
+            "percentage": round((score / total) * 100, 2) if total else 0,
+            "chapter_id": Quiz.query.get(qid).chapter_id 
 
-    # Chapter-wise for subject_id = 1
-    chapters = Chapter.query.filter_by(subject_id=1).all()
+        }
+        for qid, name, score, total in quiz_scores
+    ]
+
+    # 2. Chapter-wise stats (scored, total marks, attempted vs total quizzes)
+    chapters = Chapter.query.all()
+    chapter_wise = []
     for chapter in chapters:
+        quizzes = chapter.quizzes
+        total_quizzes = len(quizzes)
+        attempted = 0
         total_score = 0
-        quiz_count = 0
-        for quiz in chapter.quizzes:
-            score = Score.query.filter_by(user_id=user_id, quiz_id=quiz.id).first()
-            if score and score.total_score is not None:
-                total_score += score.total_score
-                quiz_count += 1
-        data["chapter"].append({
-            "label": chapter.name,
-            "score": round(total_score / quiz_count, 2) if quiz_count else 0
+        total_possible = 0
+
+        for quiz in quizzes:
+            score_entry = Score.query.filter_by(quiz_id=quiz.id, user_id=user_id).first()
+            question_count = Question.query.filter_by(quiz_id=quiz.id).count()
+            total_possible += question_count
+
+            if score_entry:
+                attempted += 1
+                total_score += score_entry.total_score
+
+        chapter_wise.append({
+            "chapter_id": chapter.id,
+            "chapter_name": chapter.name,
+            "scored": total_score,
+            "subject_id": chapter.subject_id,
+            "percentage": round((total_score / total_possible) * 100, 2) if total_possible else 0,
+            "total_marks": total_possible,
+            "attempted_quizzes": attempted,
+            "total_quizzes": total_quizzes
         })
 
-    # Quiz-wise for chapter_id = 1
-    quizzes = Quiz.query.filter_by(chapter_id=1).all()
-    for quiz in quizzes:
-        score = Score.query.filter_by(user_id=user_id, quiz_id=quiz.id).first()
-        data["quiz"].append({
-            "label": quiz.quiz_name,
-            "score": score.total_score if score and score.total_score is not None else 0
+    # 3. Subject-wise stats (scored, total marks, attempted vs total quizzes)
+    subjects = Subject.query.all()
+    subject_wise = []
+    for subject in subjects:
+        chapters = subject.chapters
+        total_quizzes = 0
+        attempted = 0
+        total_score = 0
+        total_possible = 0
+
+        for chapter in chapters:
+            for quiz in chapter.quizzes:
+                total_quizzes += 1
+                score_entry = Score.query.filter_by(quiz_id=quiz.id, user_id=user_id).first()
+                question_count = Question.query.filter_by(quiz_id=quiz.id).count()
+                total_possible += question_count
+
+                if score_entry:
+                    attempted += 1
+                    total_score += score_entry.total_score
+
+        subject_wise.append({
+            "subject_id": subject.id,
+            "subject_name": subject.name,
+            "scored": total_score,
+            "total_marks": total_possible,
+            "attempted_quizzes": attempted,
+            "total_quizzes": total_quizzes
         })
 
-    return jsonify(data)
+    return jsonify({
+        "quiz_wise": quiz_wise,
+        "chapter_wise": chapter_wise,
+        "subject_wise": subject_wise
+    })
+
 
 
 
