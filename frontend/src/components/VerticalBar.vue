@@ -14,7 +14,7 @@ import {
   CategoryScale,
   LinearScale,
 } from 'chart.js'
-import { computed, defineProps } from 'vue'
+import { computed } from 'vue'
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale)
 

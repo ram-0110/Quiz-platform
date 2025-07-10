@@ -58,7 +58,7 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, watch, computed } from 'vue'
+import { ref, watch, computed } from 'vue'
 
 const props = defineProps({
   index: {

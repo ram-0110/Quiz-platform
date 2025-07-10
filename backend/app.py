@@ -1,105 +1,117 @@
 from flask import (
-    Flask,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash,
-    session,
-    send_file,
-    jsonify
+    Flask, render_template, request, redirect, url_for, flash, session,
+    send_file, jsonify
 )
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 from flask_cors import CORS
-import uuid
-from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity,create_refresh_token
-from functools import wraps
-import redis
+from flask_jwt_extended import (
+    JWTManager, create_access_token, jwt_required, get_jwt_identity,
+    create_refresh_token
+)
 from flask_redis import FlaskRedis
+from celery import Celery
+import uuid
+import requests
+import json
+import pytz
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 
-# -------------------------------  App  -----------------------------------------------
 
+
+# ------------------------------- App Setup -----------------------------------------------
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-app.config["SECRET_KEY"] = "your_secret_key_here"
-app.config['JWT_SECRET_KEY'] = 'super-secret' 
-app.config['REDIS_URL'] = "redis://localhost:6379/0"  # Default Redis URL
+app.config.update(
+    SQLALCHEMY_DATABASE_URI="sqlite:///database.db",
+    SQLALCHEMY_TRACK_MODIFICATIONS=False,
+    SECRET_KEY="your_secret_key_here",
+    JWT_SECRET_KEY='super-secret',
+    JWT_TOKEN_LOCATION=['headers'],
+    JWT_HEADER_NAME='Authorization',
+    JWT_HEADER_TYPE='Bearer',
+    JWT_ACCESS_TOKEN_EXPIRES=timedelta(days=1),
+    REDIS_URL="redis://localhost:6379/0"
+)
 
-# JWT Configuration for handling CORS
-app.config['JWT_TOKEN_LOCATION'] = ['headers']
-app.config['JWT_HEADER_NAME'] = 'Authorization'
-app.config['JWT_HEADER_TYPE'] = 'Bearer'
-app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=1)
-
-
-jwt = JWTManager(app)
+# Extensions
+db = SQLAlchemy(app)
 redis_client = FlaskRedis(app)
-
-# Configure CORS properly - more permissive for development
+jwt = JWTManager(app)
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
 
-db = SQLAlchemy(app)
+# ------------------------------- Celery Setup -----------------------------------------------
+def make_celery(flask_app):
+    celery = Celery(
+        flask_app.import_name,
+        backend=flask_app.config["REDIS_URL"],
+        broker=flask_app.config["REDIS_URL"]
+    )
+    celery.conf.update(flask_app.config)
+    
+    class ContextTask(celery.Task):
+        def __call__(self, *args, **kwargs):
+            with flask_app.app_context():
+                return self.run(*args, **kwargs)
+    celery.Task = ContextTask
+    return celery
 
-# -------------------------------  Database  -----------------------------------------------
+celery = make_celery(app)
+celery.conf.beat_schedule = {
+    'send-daily-reminders': {
+        'task': 'send_daily_reminders',
+        'schedule': timedelta(minutes=1),  # for testing; use crontab for production
+    },
+}
+celery.conf.timezone = 'UTC'
 
-# Association table for many-to-many between Users and Subjects
+# ------------------------------- Models -----------------------------------------------
 user_subject = db.Table(
     'user_subject',
-    db.Column('user_id', db.Integer, db.ForeignKey('users.id'), primary_key=True),
+    db.Column('user_id', db.String(36), db.ForeignKey('users.id'), primary_key=True),
     db.Column('subject_id', db.Integer, db.ForeignKey('subjects.id'), primary_key=True)
 )
 
 class User(db.Model):
     __tablename__ = 'users'
-
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     username = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(128), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     is_admin = db.Column(db.Boolean, default=False)
-
+    last_seen = db.Column(db.DateTime, default=datetime.utcnow)  # 👈 Add this line
     attempts = db.relationship('Score', backref='user', lazy=True)
     subjects = db.relationship('Subject', secondary=user_subject, back_populates='students')
 
 class Subject(db.Model):
     __tablename__ = 'subjects'
-
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
-
     chapters = db.relationship('Chapter', backref='subject', lazy=True)
     students = db.relationship('User', secondary=user_subject, back_populates='subjects')
 
 class Chapter(db.Model):
     __tablename__ = 'chapters'
-
     id = db.Column(db.Integer, primary_key=True)
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
     name = db.Column(db.String(120), nullable=False)
     description = db.Column(db.Text)
-
     quizzes = db.relationship('Quiz', backref='chapter', lazy=True)
 
 class Quiz(db.Model):
     __tablename__ = 'quizzes'
-
     id = db.Column(db.Integer, primary_key=True)
     quiz_name = db.Column(db.String(120), unique=True, nullable=False)
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.id'), nullable=False)
-    date_of_quiz = db.Column(db.Date, default=datetime.utcnow)
+    date_of_quiz = db.Column(db.DateTime, default=datetime.utcnow)
     time_duration = db.Column(db.String(5))
     remarks = db.Column(db.Text)
-
     questions = db.relationship('Question', backref='quiz', lazy=True)
     attempts = db.relationship('Score', backref='quiz', lazy=True)
 
 class Question(db.Model):
     __tablename__ = 'questions'
-
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
     question_statement = db.Column(db.Text, nullable=False)
@@ -107,34 +119,29 @@ class Question(db.Model):
     option2 = db.Column(db.String(255), nullable=False)
     option3 = db.Column(db.String(255))
     option4 = db.Column(db.String(255))
-    correct_option = db.Column(db.Integer, nullable=False)  # '1','2','3','4'
+    correct_option = db.Column(db.String(10), nullable=False)
 
 class Score(db.Model):
     __tablename__ = 'scores'
-
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    user_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     total_score = db.Column(db.Integer)
     remarks = db.Column(db.Text)
 
-# Create tables
 with app.app_context():
     db.create_all()
 
-
+# ------------------------------- Rate Limiting -----------------------------------------------
 def is_rate_limited(key, limit, period):
-    if redis_client.exists(key):
-        count = int(redis_client.get(key))
-        if count >= limit:
-            return True
-        redis_client.incr(key)
-        return False
-    else:
-        redis_client.setex(key, period, 1)
-        return False
-    
+    count = redis_client.get(key)
+    if count and int(count) >= limit:
+        return True
+    redis_client.incr(key)
+    redis_client.expire(key, period)
+    return False
+
 # --------------------------------------------------------------------------------
 # Add OPTIONS method handler for routes that need preflight requests
 @app.route('/api/login', methods=['OPTIONS'])
@@ -154,6 +161,25 @@ def home_options():
     return '', 200
 
 # --------------------------------------------------------------------------------
+
+
+@app.before_request
+def update_last_seen():
+    # Only try to verify JWT for routes that actually need it
+    try:
+        verify_jwt_in_request(optional=True)
+        user_id = get_jwt_identity()
+        if user_id:
+            user = User.query.get(user_id)
+            if user:
+                user.last_seen = datetime.utcnow()
+                db.session.commit()
+    except Exception as e:
+        # Don't fail the request if JWT isn't present or invalid
+        pass
+
+
+
 @app.route('/api/signup', methods=['POST'])
 def signup():
     ip_key = f"signup_ip:{request.remote_addr}"
@@ -236,19 +262,13 @@ def login():
 @jwt_required()
 def dashboard():
     current_user = get_jwt_identity()
-    cache_key = f"dashboard_{current_user}"
-    
-    # Check if cached data exists
-    cached_data = redis_client.get(cache_key)
-    if cached_data:
-        return jsonify(json.loads(cached_data)), 200
-
+    print(current_user)
     user = User.query.filter_by(email=current_user).first()
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    # Get all subjects from DB
     all_subjects = Subject.query.all()
+    print(all_subjects)
     subject_list = [
         {"id": subject.id, "name": subject.name}
         for subject in all_subjects
@@ -262,7 +282,6 @@ def dashboard():
     }
 
     # Cache the response for 5 minutes (300 seconds)
-    redis_client.setex(cache_key, 300, json.dumps(response_data))
     
     return jsonify(response_data), 200
 
@@ -272,11 +291,8 @@ def dashboard():
 @jwt_required()
 def about():
     current_user = get_jwt_identity()
-    cache_key = f"about_{current_user}"
     
-    cached_data = redis_client.get(cache_key)
-    if cached_data:
-        return jsonify(json.loads(cached_data)), 200
+
     
     user = User.query.filter_by(email=current_user).first()
 
@@ -320,13 +336,7 @@ def about():
             })
     print("Results:", formatted_results)
 
-    redis_client.setex(cache_key, 600, json.dumps({
-        'username': user.username,
-        'email': user.email,
-        'is_admin': user.is_admin,
-        'hello': 'Hello, this is the about page!',
-        'results': formatted_results
-    }))
+
 
     return jsonify({
         'username': user.username,
@@ -368,12 +378,7 @@ def serialize_subject_with_chapters_and_counts(subject):
 def home():
     current_user = get_jwt_identity()
     user = User.query.filter_by(email=current_user).first()
-    cache_key = f"home_{current_user}"
     
-    cached_data = redis_client.get(cache_key)
-    if cached_data:
-        return jsonify(json.loads(cached_data)), 200
-
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
@@ -402,13 +407,7 @@ def home():
             }
         })
 
-    redis_client.setex(cache_key, 180, json.dumps({
-        'username': user.username,
-        'email': user.email,
-        'is_admin': user.is_admin,
-        'scores': scores_data,
-    }))
-    
+
     return jsonify({
         'username': user.username,
         'email': user.email,
@@ -1010,7 +1009,64 @@ def get_static_stats():
     })
 
 
+# -------------------------------  Utility Functions  -----------------------------------------------
+
+def is_rate_limited(key, limit, period):
+    if redis_client.exists(key):
+        count = int(redis_client.get(key))
+        if count >= limit:
+            return True
+        redis_client.incr(key)
+        return False
+    else:
+        redis_client.setex(key, period, 1)
+        return False
+
+# -------------------------------  Scheduled Tasks  -----------------------------------------------
+GOOGLE_CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQAu4KDusQ/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=qhI9GKlTCLyGFJg7q3N6eewKZSMzXQI8TAEWa1QVRvM"
+@celery.task(name='send_daily_reminders')
+def send_daily_reminders():
+    print("🔁 Task STARTED at", datetime.utcnow())
+
+    # Convert current time to IST
+    now_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
+    today_start_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    # Convert IST midnight to UTC, then strip tzinfo to make it naive
+    today_start_utc = today_start_ist.astimezone(pytz.utc).replace(tzinfo=None)
+
+    # Get all quizzes created after today_start_utc
+    new_quizzes = Quiz.query.filter(Quiz.date_of_quiz >= today_start_utc).all()
+    new_quiz_count = len(new_quizzes)
+
+    users = User.query.all()
+    total_reminded = 0
+
+    for user in users:
+        user_last_seen = user.last_seen or datetime.min  # fallback if None
+
+        # Ensure user_last_seen is naive for comparison
+        if user_last_seen.tzinfo is not None:
+            user_last_seen = user_last_seen.replace(tzinfo=None)
+
+        if user_last_seen < today_start_utc or new_quiz_count > 0:
+            message = {
+                "text": f"📢 Hi {user.username}, there are new quizzes or you haven’t visited today. Come back and check what's new!"
+            }
+            try:
+                print(f"📨 Sending to {user.username}")
+                response = requests.post(GOOGLE_CHAT_WEBHOOK_URL, json=message)
+                if response.status_code == 200:
+                    total_reminded += 1
+                else:
+                    print(f"❌ Failed for {user.username}: {response.text}")
+            except Exception as e:
+                print(f"⚠️ Exception while sending to {user.username}: {e}")
+
+    print(f"✅ Reminders sent to {total_reminded} users at {now_ist.strftime('%H:%M:%S')} IST")
+    return f"Reminders sent to {total_reminded} users."
 
 
+# ------------------------------- App Runner -----------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
