@@ -1,7 +1,7 @@
 <template>
   <div class="d-flex justify-content-between align-items-center mb-3">
     <h5 class="fw-bold m-0">{{ label }}</h5>
-    <span class="badge bg-primary fs-6">{{ attempted }}/{{ total }}</span>
+    <span class="badge bg-black text-white fs-6">{{ attempted }}/{{ total }}</span>
   </div>
 
   <div class="position-relative mb-4">
@@ -14,31 +14,28 @@
         <span class="fw-bold ps-2">{{ progressPercent }}%</span>
       </div>
     </div>
-    <!-- Dot & Tooltip -->
-    <div
-      v-if="progressPercent > 0"
-      class="position-absolute translate-middle-x text-center"
-      :style="{ left: progressPercent + '%', top: '-20px' }"
-    ></div>
   </div>
 
-  <div v-if="showChart" class="border rounded p-3 mb-4 chart-wrapper">
-    <canvas ref="chartCanvas" width="300" height="200"></canvas>
+  <div v-if="showChart && chapterQuizzes.length" class="border rounded p-3 mb-4 chart-wrapper">
+    <h6 class="mb-3 text-center">Chapter-wise Quiz Details</h6>
+    <div class="chart-scroll-wrapper">
+      <canvas ref="chartCanvas" class="w-100" height="300"></canvas>
+    </div>
   </div>
 
   <!-- Stats -->
   <div class="row text-center">
     <div class="col">
       <div class="text-muted">Completed</div>
-      <div class="fw-bold text-success fs-5">{{ attempted }}</div>
+      <div class="fw-bold text-black fs-5">{{ attempted }}</div>
     </div>
     <div class="col">
       <div class="text-muted">Remaining</div>
-      <div class="fw-bold text-warning fs-5">{{ remaining }}</div>
+      <div class="fw-bold text-black fs-5">{{ remaining }}</div>
     </div>
     <div class="col">
       <div class="text-muted">Progress</div>
-      <div class="fw-bold text-primary fs-5">{{ progressPercent }}%</div>
+      <div class="fw-bold text-black fs-5">{{ progressPercent }}%</div>
     </div>
   </div>
 </template>
@@ -52,6 +49,10 @@ const props = defineProps({
   total: { type: Number, default: 0 },
   showChart: { type: Boolean, default: true },
   animated: { type: Boolean, default: true },
+  chapterQuizzes: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const chartCanvas = ref(null)
@@ -63,23 +64,12 @@ const progressPercent = computed(() =>
 
 const remaining = computed(() => Math.max(0, props.total - props.attempted))
 
-const milestones = computed(() => [
-  { value: 25, label: '25%' },
-  { value: 50, label: '50%' },
-  { value: 75, label: '75%' },
-  { value: 100, label: '100%' },
-])
-
 const getGradientColor = () => {
-  const p = progressPercent.value
-  if (p < 25) return 'linear-gradient(to right, #dc3545, #fd7e14)'
-  if (p < 50) return 'linear-gradient(to right, #fd7e14, #ffc107)'
-  if (p < 75) return 'linear-gradient(to right, #ffc107, #28a745)'
-  return 'linear-gradient(to right, #28a745, #198754)'
+  return '#000000' // solid black
 }
 
 const initChart = async () => {
-  if (!props.showChart || !chartCanvas.value) return
+  if (!props.showChart || !chartCanvas.value || props.chapterQuizzes.length === 0) return
 
   const { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend } = await import(
     'chart.js'
@@ -87,53 +77,52 @@ const initChart = async () => {
   Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
   const ctx = chartCanvas.value.getContext('2d')
+  if (!ctx) return
+
   if (chartInstance) chartInstance.destroy()
 
-  const barColor =
-    progressPercent.value < 25
-      ? '#dc3545'
-      : progressPercent.value < 50
-        ? '#fd7e14'
-        : progressPercent.value < 75
-          ? '#ffc107'
-          : '#28a745'
+  const labels = props.chapterQuizzes.map((q) => q.chapter_name)
+  const attempted = props.chapterQuizzes.map((q) => q.attempted_quizzes)
+  const total = props.chapterQuizzes.map((q) => q.total_quizzes)
+  const remaining = total.map((t, i) => Math.max(0, t - attempted[i]))
 
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Completed', 'Remaining'],
+      labels,
       datasets: [
         {
-          label: 'Quizzes',
-          data: [props.attempted, remaining.value],
-          backgroundColor: [barColor, '#e9ecef'],
-          borderColor: [barColor, '#adb5bd'],
-          borderWidth: 1,
-          borderRadius: 6,
-          borderSkipped: false,
+          label: 'Attempted',
+          data: attempted,
+          backgroundColor: '#000000',
+        },
+        {
+          label: 'Remaining',
+          data: remaining,
+          backgroundColor: '#cccccc',
         },
       ],
     },
     options: {
-      responsive: false,
+      responsive: true,
       maintainAspectRatio: false,
-      indexAxis: 'y',
       plugins: {
-        legend: { display: false },
+        legend: { position: 'top' },
         tooltip: {
           callbacks: {
             label(context) {
-              const total = props.attempted + remaining.value
-              const percentage = total > 0 ? Math.round((context.parsed.x / total) * 100) : 0
-              return `${context.parsed.x} quizzes (${percentage}%)`
+              const attemptedVal = context.dataset.data[context.dataIndex]
+              const totalVal = props.chapterQuizzes[context.dataIndex]?.total_quizzes || 0
+              const percentage = totalVal ? Math.round((attemptedVal / totalVal) * 100) : 0
+              return `${attemptedVal} quizzes (${percentage}%)`
             },
           },
         },
       },
       scales: {
-        x: {
+        y: {
           beginAtZero: true,
-          max: Math.max(props.total, 1),
+          ticks: { stepSize: 1 },
         },
       },
       animation: {
@@ -144,17 +133,18 @@ const initChart = async () => {
 }
 
 onMounted(() => {
-  nextTick(initChart)
+  nextTick(() => {
+    setTimeout(initChart, 100) // ensure canvas is mounted
+  })
 })
 
-watch([() => props.attempted, () => props.total], initChart)
+watch(() => props.chapterQuizzes, initChart, { deep: true })
 </script>
 
 <style scoped>
 .dot-indicator {
   width: 12px;
   height: 12px;
-  background-color: white;
   border: 2px solid #0d6efd;
   border-radius: 50%;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
@@ -164,7 +154,13 @@ watch([() => props.attempted, () => props.total], initChart)
   width: 10px;
   height: 10px;
   background-color: #dee2e6;
+
   border-radius: 50%;
   transition: background-color 0.3s ease;
+}
+
+.chart-scroll-wrapper {
+  max-height: 200px;
+  overflow-y: auto;
 }
 </style>

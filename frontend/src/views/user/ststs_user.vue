@@ -38,24 +38,17 @@
       <div class="chart-container" v-if="subjectRef.length">
         <RadarChart :subjects="subjectRef" />
       </div>
-      <div class="chart-container">
-        <div class="chart-container" v-if="selectedSubject">
-          <SubjectProgress
-            :label="`Subject: ${selectedSubject.subject_name}`"
-            :attempted="selectedSubject.attempted_quizzes"
-            :total="selectedSubject.total_quizzes"
-          />
-        </div>
-
-        <div class="chart-container" v-if="selectedChapter">
-          <VerticalBar
-            :label="`Chapter: ${selectedChapter.chapter_name}`"
-            :scored="selectedChapter.attempted_quizzes"
-            :total="selectedChapter.total_quizzes"
-          />
-        </div>
+      <div class="chart-container" v-if="selectedSubject">
+        <SubjectProgress
+          :label="`Subject: ${selectedSubject.subject_name}`"
+          :attempted="selectedSubject.attempted_quizzes"
+          :total="selectedSubject.total_quizzes"
+          :chapterQuizzes="chapterRef.filter((ch) => ch.subject_id === selectedSubject.subject_id)"
+        />
       </div>
     </div>
+
+    <div class="charts-section"><p>a bar graph gor performancein all the quizes for the selectet topic and subject</p></div>
   </div>
 </template>
 
