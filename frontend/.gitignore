@@ -12,7 +12,7 @@ instance/
 celerybeat-schedule.db
 .vscode
 node_modules/
-.venv
+.venv/
 
 node_modules
 .DS_Store
