@@ -1,7 +1,8 @@
+<!-- SubjectProgress.vue -->
 <template>
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h5 class="fw-bold m-0">{{ label }}</h5>
-    <span class="badge bg-black text-white fs-6">{{ attempted }}/{{ total }}</span>
+    <h5 class="fw-bold text-dark m-0">{{ label }}</h5>
+    <span class="badge bg-primary text-white fs-6">{{ attempted }}/{{ total }}</span>
   </div>
 
   <div class="position-relative mb-4">
@@ -17,25 +18,24 @@
   </div>
 
   <div v-if="showChart && chapterQuizzes.length" class="border rounded p-3 mb-4 chart-wrapper">
-    <h6 class="mb-3 text-center">Chapter-wise Quiz Details</h6>
+    <h6 class="mb-3 text-center text-dark">Chapter-wise Quiz Details</h6>
     <div class="chart-scroll-wrapper">
       <canvas ref="chartCanvas" class="w-100" height="300"></canvas>
     </div>
   </div>
 
-  <!-- Stats -->
   <div class="row text-center">
     <div class="col">
       <div class="text-muted">Completed</div>
-      <div class="fw-bold text-black fs-5">{{ attempted }}</div>
+      <div class="fw-bold text-dark fs-5">{{ attempted }}</div>
     </div>
     <div class="col">
       <div class="text-muted">Remaining</div>
-      <div class="fw-bold text-black fs-5">{{ remaining }}</div>
+      <div class="fw-bold text-dark fs-5">{{ remaining }}</div>
     </div>
     <div class="col">
       <div class="text-muted">Progress</div>
-      <div class="fw-bold text-black fs-5">{{ progressPercent }}%</div>
+      <div class="fw-bold text-dark fs-5">{{ progressPercent }}%</div>
     </div>
   </div>
 </template>
@@ -65,7 +65,7 @@ const progressPercent = computed(() =>
 const remaining = computed(() => Math.max(0, props.total - props.attempted))
 
 const getGradientColor = () => {
-  return '#000000' // solid black
+  return '#9ec5fe' // subtle blue for progress bar
 }
 
 const initChart = async () => {
@@ -94,12 +94,12 @@ const initChart = async () => {
         {
           label: 'Attempted',
           data: attempted,
-          backgroundColor: '#000000',
+          backgroundColor: '#9ec5fe',
         },
         {
           label: 'Remaining',
           data: remaining,
-          backgroundColor: '#cccccc',
+          backgroundColor: '#dee2e6',
         },
       ],
     },
@@ -107,7 +107,7 @@ const initChart = async () => {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: { position: 'top' },
+        legend: { position: 'top', labels: { color: '#333' } },
         tooltip: {
           callbacks: {
             label(context) {
@@ -117,12 +117,20 @@ const initChart = async () => {
               return `${attemptedVal} quizzes (${percentage}%)`
             },
           },
+          backgroundColor: '#333333',
+          titleColor: '#ffffff',
+          bodyColor: '#ffffff',
         },
       },
       scales: {
         y: {
           beginAtZero: true,
-          ticks: { stepSize: 1 },
+          ticks: { stepSize: 1, color: '#333' },
+          grid: { color: 'rgba(0,0,0,0.05)' },
+        },
+        x: {
+          ticks: { color: '#333' },
+          grid: { color: 'rgba(0,0,0,0.05)' },
         },
       },
       animation: {
@@ -134,7 +142,7 @@ const initChart = async () => {
 
 onMounted(() => {
   nextTick(() => {
-    setTimeout(initChart, 100) // ensure canvas is mounted
+    setTimeout(initChart, 100)
   })
 })
 
@@ -142,23 +150,6 @@ watch(() => props.chapterQuizzes, initChart, { deep: true })
 </script>
 
 <style scoped>
-.dot-indicator {
-  width: 12px;
-  height: 12px;
-  border: 2px solid #0d6efd;
-  border-radius: 50%;
-  box-shadow: 0 0 5px rgba(0, 0, 0, 0.15);
-}
-
-.milestone-dot {
-  width: 10px;
-  height: 10px;
-  background-color: #dee2e6;
-
-  border-radius: 50%;
-  transition: background-color 0.3s ease;
-}
-
 .chart-scroll-wrapper {
   max-height: 200px;
   overflow-y: auto;

@@ -48,7 +48,9 @@
       </div>
     </div>
 
-    <div class="charts-section"><p>a bar graph gor performancein all the quizes for the selectet topic and subject</p></div>
+    <div class="charts-section bar-chat">
+      <BarChart v-if="filteredQuizzes.length" :quizData="filteredQuizzes" />
+    </div>
   </div>
 </template>
 
@@ -60,6 +62,7 @@ import PageHeader from '@/components/PageHeader.vue'
 import RadarChart from '@/components/RadarChart.vue'
 import VerticalBar from '@/components/VerticalBar.vue'
 import SubjectProgress from '@/components/SubjectProgress.vue'
+import BarChart from '@/components/BarChart.vue'
 
 const subjectRef = ref([])
 const chapterRef = ref([])
@@ -85,6 +88,16 @@ const selectedChapter = computed(() =>
   chapterRef.value.find((c) => c.chapter_id === active_chapter.value),
 )
 
+const filteredQuizzes = computed(() => {
+  if (!active_subject.value || !active_chapter.value) return []
+  return quizRef.value
+    .filter((q) => q.chapter_id === active_chapter.value)
+    .map((q) => ({
+      quiz_name: q.quiz_name,
+      score: Math.round(q.percentage), // percentage is already calculated
+    }))
+})
+
 onMounted(async () => {
   try {
     const res = await api.get(`/stats/static`)
@@ -101,6 +114,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.bar-chat {
+  width: 100%;
+  max-width: 1200px; /* or more, depending on your preference */
+}
 .charts-section {
   display: flex;
   flex-wrap: wrap;

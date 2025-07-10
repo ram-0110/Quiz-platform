@@ -1,3 +1,4 @@
+<!-- RadarChart.vue -->
 <template>
   <Radar :data="chartData" :options="chartOptions" />
 </template>
@@ -24,7 +25,6 @@ const props = defineProps({
   },
 })
 
-// Normalize: (score / total_marks) * 100
 const chartData = {
   labels: props.subjects.map((s) => s.subject_name),
   datasets: [
@@ -33,10 +33,9 @@ const chartData = {
       data: props.subjects.map((s) =>
         s.total_marks > 0 ? Math.round((s.scored / s.total_marks) * 100) : 0,
       ),
-      backgroundColor: 'rgba(54, 162, 235, 0.2)',
-      borderColor: 'rgba(54, 162, 235, 1)',
-      borderWidth: 2,
-      pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+      backgroundColor: 'rgba(207, 226, 255, 0.5)', // light blue
+      borderColor: '#9ec5fe',
+      pointBackgroundColor: '#6ea8fe',
     },
   ],
 }
@@ -50,16 +49,30 @@ const chartOptions = {
       ticks: {
         stepSize: 20,
         backdropColor: 'transparent',
+        color: '#333333',
+      },
+      grid: {
+        color: 'rgba(0,0,0,0.1)',
+      },
+      angleLines: {
+        color: 'rgba(0,0,0,0.1)',
+      },
+      pointLabels: {
+        color: '#333333',
       },
     },
   },
   plugins: {
     legend: {
       position: 'top',
+      labels: {
+        color: '#333333',
+      },
     },
     title: {
       display: true,
       text: 'Subject-wise Score %',
+      color: '#333333',
     },
   },
 }
