@@ -16,6 +16,8 @@ from flask_cors import CORS
 import uuid
 from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity,create_refresh_token
 from functools import wraps
+import redis
+from flask_redis import FlaskRedis
 
 # -------------------------------  App  -----------------------------------------------
 
@@ -24,6 +26,7 @@ app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.config["SECRET_KEY"] = "your_secret_key_here"
 app.config['JWT_SECRET_KEY'] = 'super-secret' 
+app.config['REDIS_URL'] = "redis://localhost:6379/0"  # Default Redis URL
 
 # JWT Configuration for handling CORS
 app.config['JWT_TOKEN_LOCATION'] = ['headers']
@@ -33,6 +36,7 @@ app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(days=1)
 
 
 jwt = JWTManager(app)
+redis_client = FlaskRedis(app)
 
 # Configure CORS properly - more permissive for development
 CORS(app, origins=["http://localhost:5173"], supports_credentials=True)
@@ -119,6 +123,18 @@ class Score(db.Model):
 with app.app_context():
     db.create_all()
 
+
+def is_rate_limited(key, limit, period):
+    if redis_client.exists(key):
+        count = int(redis_client.get(key))
+        if count >= limit:
+            return True
+        redis_client.incr(key)
+        return False
+    else:
+        redis_client.setex(key, period, 1)
+        return False
+    
 # --------------------------------------------------------------------------------
 # Add OPTIONS method handler for routes that need preflight requests
 @app.route('/api/login', methods=['OPTIONS'])
@@ -140,6 +156,10 @@ def home_options():
 # --------------------------------------------------------------------------------
 @app.route('/api/signup', methods=['POST'])
 def signup():
+    ip_key = f"signup_ip:{request.remote_addr}"
+    if is_rate_limited(ip_key, 5, 60):
+        return jsonify({'error': 'Too many requests'}), 429
+    
     data = request.get_json()
     username = data.get('username')
     password = data.get('password')
@@ -178,6 +198,10 @@ def signup():
 # --------------------------------------------------------------------------------
 @app.route('/api/login', methods=['POST'])
 def login():
+    ip_key = f"login_ip:{request.remote_addr}"
+    if is_rate_limited(ip_key, 10, 60):
+        return jsonify({'error': 'Too many requests'}), 429
+    
     data = request.get_json()
     email = data.get('email')
     password = data.get('password')
@@ -212,8 +236,14 @@ def login():
 @jwt_required()
 def dashboard():
     current_user = get_jwt_identity()
-    user = User.query.filter_by(email=current_user).first()
+    cache_key = f"dashboard_{current_user}"
+    
+    # Check if cached data exists
+    cached_data = redis_client.get(cache_key)
+    if cached_data:
+        return jsonify(json.loads(cached_data)), 200
 
+    user = User.query.filter_by(email=current_user).first()
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
@@ -224,12 +254,17 @@ def dashboard():
         for subject in all_subjects
     ]
 
-    return jsonify({
+    response_data = {
         'username': user.username,
         'email': user.email,
         'is_admin': user.is_admin,
         'subjects': subject_list
-    }), 200
+    }
+
+    # Cache the response for 5 minutes (300 seconds)
+    redis_client.setex(cache_key, 300, json.dumps(response_data))
+    
+    return jsonify(response_data), 200
 
 # --------------------------------------------------------------------------------
 
@@ -237,6 +272,12 @@ def dashboard():
 @jwt_required()
 def about():
     current_user = get_jwt_identity()
+    cache_key = f"about_{current_user}"
+    
+    cached_data = redis_client.get(cache_key)
+    if cached_data:
+        return jsonify(json.loads(cached_data)), 200
+    
     user = User.query.filter_by(email=current_user).first()
 
     if not user:
@@ -279,7 +320,13 @@ def about():
             })
     print("Results:", formatted_results)
 
-
+    redis_client.setex(cache_key, 600, json.dumps({
+        'username': user.username,
+        'email': user.email,
+        'is_admin': user.is_admin,
+        'hello': 'Hello, this is the about page!',
+        'results': formatted_results
+    }))
 
     return jsonify({
         'username': user.username,
@@ -321,6 +368,11 @@ def serialize_subject_with_chapters_and_counts(subject):
 def home():
     current_user = get_jwt_identity()
     user = User.query.filter_by(email=current_user).first()
+    cache_key = f"home_{current_user}"
+    
+    cached_data = redis_client.get(cache_key)
+    if cached_data:
+        return jsonify(json.loads(cached_data)), 200
 
     if not user:
         return jsonify({'message': 'User not found'}), 404
@@ -350,6 +402,13 @@ def home():
             }
         })
 
+    redis_client.setex(cache_key, 180, json.dumps({
+        'username': user.username,
+        'email': user.email,
+        'is_admin': user.is_admin,
+        'scores': scores_data,
+    }))
+    
     return jsonify({
         'username': user.username,
         'email': user.email,
