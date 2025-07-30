@@ -1,7 +1,6 @@
 <template>
   <div class="min-h-screen bg-white flex items-center justify-center p-6">
     <div class="w-full max-w-md text-center">
-      <!-- Loading -->
       <div v-if="loading" class="py-12">
         <div
           class="w-10 h-10 mx-auto border-4 border-gray-300 border-t-black rounded-full animate-spin"
@@ -9,7 +8,6 @@
         <p class="text-gray-600 mt-6">Loading your results...</p>
       </div>
 
-      <!-- Error -->
       <div v-else-if="!result" class="p-8 border border-red-200 rounded-md bg-red-50">
         <p class="text-red-600 font-semibold mb-4">Failed to load results.</p>
         <button
@@ -21,7 +19,7 @@
       </div>
 
       <div v-else class="dashboard-container">
-        <PageHeader title="Welcome back Admin!" subtitle="Manage your subjects and quizzes" />
+        <PageHeader title="Results" subtitle="View your results" />
 
         <div class="subDir">
           <h2 class="score-display">{{ result.total_score }}</h2>
@@ -45,8 +43,6 @@
           <RouterLink to="/dashboard" class="back-button"> Back to Dashboard </RouterLink>
         </div>
       </div>
-
-      <!-- Result -->
     </div>
   </div>
 </template>

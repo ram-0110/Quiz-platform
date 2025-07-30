@@ -1,10 +1,9 @@
 <script setup>
 import { ref, computed, watch } from 'vue'
 
-// Props
 const props = defineProps({
   question: Object,
-  selected: [Number, Array], // could be a number or an array
+  selected: [Number, Array],
 })
 
 const emit = defineEmits(['select'])
@@ -15,7 +14,6 @@ const selectedOption = ref(
   isMultipleChoice.value ? [...(props.selected || [])] : (props.selected ?? null),
 )
 
-// Watch for parent updates
 watch(
   () => props.selected,
   (val) => {
@@ -23,7 +21,6 @@ watch(
   },
 )
 
-// Dynamically extract options
 const dynamicOptions = computed(() => {
   return [
     props.question.option1,
@@ -33,7 +30,6 @@ const dynamicOptions = computed(() => {
   ].filter(Boolean)
 })
 
-// Handle option select
 const toggleOption = (index) => {
   if (isMultipleChoice.value) {
     const current = [...selectedOption.value]

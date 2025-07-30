@@ -16,9 +16,9 @@
 import { RouterLink } from 'vue-router'
 import { ref, onMounted } from 'vue'
 import api from '@/axios/axios'
-import { useToast } from 'vue-toastification' // ✅ import toast
+import { useToast } from 'vue-toastification'
 
-const toast = useToast() // ✅ initialize toast
+const toast = useToast()
 
 const quiz_name = ref('')
 const quiz_date = ref('')
@@ -43,7 +43,7 @@ onMounted(async () => {
     console.log('Fetched data:', data.message)
   } catch (error) {
     console.error('Error fetching card data:', error)
-    toast.error('Failed to load quiz data') // ✅ error toast
+    toast.error('Failed to load quiz data') 
   }
 })
 </script>

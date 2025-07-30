@@ -99,7 +99,6 @@ function toggleCorrectOption(index) {
   }
 }
 
-// Watch changes and emit full question object
 watch(
   [question, options, correctOptions],
   () => {

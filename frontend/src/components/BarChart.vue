@@ -38,7 +38,7 @@ const renderChart = () => {
         {
           label: 'Score %',
           data: scores,
-          backgroundColor: '#9ec5fe', // use a visible color on white theme
+          backgroundColor: '#9ec5fe',
           borderRadius: 8,
           barThickness: 40,
         },
@@ -50,27 +50,27 @@ const renderChart = () => {
       scales: {
         x: {
           ticks: {
-            color: '#333333', // dark gray x-axis labels
+            color: '#333333',
           },
           grid: {
-            color: 'rgba(0,0,0,0.05)', // light gray x-axis grid
+            color: 'rgba(0,0,0,0.05)',
           },
         },
         y: {
           beginAtZero: true,
           max: 100,
           ticks: {
-            color: '#333333', // dark gray y-axis labels
+            color: '#333333',
           },
           grid: {
-            color: 'rgba(0,0,0,0.05)', // light gray y-axis grid
+            color: 'rgba(0,0,0,0.05)',
           },
         },
       },
       plugins: {
         legend: {
           labels: {
-            color: '#333333', // dark gray legend
+            color: '#333333',
           },
         },
         tooltip: {
@@ -107,7 +107,7 @@ watch(
   width: 100%;
   max-width: 1000px;
   height: 400px;
-  background: #ffffff; /* ✅ Set to white for your theme */
+  background: #ffffff; 
   padding: 1rem;
   border-radius: 0.5rem;
   border: 1px solid #e0e0e0;

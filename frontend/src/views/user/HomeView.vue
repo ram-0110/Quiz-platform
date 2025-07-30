@@ -65,7 +65,6 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import PageHeader from '@/components/PageHeader.vue'
 import api from '@/axios/axios'
 import { useRouter } from 'vue-router'
 

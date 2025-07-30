@@ -29,7 +29,6 @@ const activeSubject = (subject) => {
   border-bottom: 1px solid #e2e2e2;
   margin-bottom: 2rem;
 }
-/* Base styles */
 .dashboard-container {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   color: #000;
@@ -42,7 +41,6 @@ const activeSubject = (subject) => {
   border-radius: 8px;
 }
 
-/* Header styles */
 .header {
   display: flex;
   justify-content: space-between;
@@ -73,7 +71,6 @@ const activeSubject = (subject) => {
   margin: 1.5rem 0 1rem;
 }
 
-/* Subject selector styles */
 .subject-selector {
   margin-bottom: 2rem;
   border: 1px solid #e2e2e2;
@@ -221,7 +218,6 @@ const activeSubject = (subject) => {
   color: #666;
 }
 
-/* Topic list */
 .accordion-body {
   padding: 0;
 }
@@ -280,7 +276,6 @@ const activeSubject = (subject) => {
   opacity: 1;
 }
 
-/* Controls */
 .controls {
   display: flex;
   justify-content: space-between;
@@ -294,7 +289,6 @@ const activeSubject = (subject) => {
   max-width: 300px;
 }
 
-/* Table styles */
 .table-container {
   border: 1px solid #e2e2e2;
   border-radius: 8px;
@@ -440,7 +434,6 @@ const activeSubject = (subject) => {
   color: #666;
 }
 
-/* Responsive adjustments */
 @media (max-width: 768px) {
   .controls {
     flex-direction: column;

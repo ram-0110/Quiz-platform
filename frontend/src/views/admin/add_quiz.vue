@@ -91,9 +91,7 @@
         <button class="btn btn-outline-dark" @click="addSingleOption">
           <i class="bi bi-plus-circle me-1"></i> Add single option
         </button>
-        <button class="btn btn-outline-dark" @click="addMultipleOption">
-          <i class="bi bi-plus-circle me-1"></i> Add multiple option
-        </button>
+ 
         <button class="btn btn-black" @click="saveQuiz" :disabled="!isFormValid">
           <i class="bi bi-save me-1"></i> Save Quiz
         </button>

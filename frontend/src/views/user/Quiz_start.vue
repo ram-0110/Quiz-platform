@@ -43,7 +43,6 @@
       </div>
     </div>
 
-    <!-- Progress & Navigation -->
     <div class="text-center mt-4 footer-quiz">
       <div class="d-flex justify-content-center flex-wrap gap-1 nav-dots mt-3">
         <button
@@ -110,20 +109,17 @@ const timeLeft = ref(0)
 const timer = ref('00:00')
 let timerInterval = null
 
-// Converts "MM:SS" to seconds
 const parseDuration = (durationStr) => {
   const [mins, secs] = durationStr.split(':').map(Number)
   return mins * 60 + secs
 }
 
-// Converts seconds to "MM:SS"
 const formatTime = (seconds) => {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
 }
 
-// Start timer and store timestamp in localStorage
 const startTimer = (durationInSeconds) => {
   const now = Math.floor(Date.now() / 1000)
   localStorage.setItem('quiz_start_time', now)
@@ -132,7 +128,6 @@ const startTimer = (durationInSeconds) => {
   runCountdown(durationInSeconds)
 }
 
-// Main countdown logic
 const runCountdown = (remainingSeconds) => {
   timeLeft.value = remainingSeconds
   timer.value = formatTime(timeLeft.value)
@@ -151,7 +146,6 @@ const runCountdown = (remainingSeconds) => {
   }, 1000)
 }
 
-// Submit the quiz
 const submitQuiz = async () => {
   const quiz_id = route.params.quiz_id
   if (!quiz_id) {
@@ -187,7 +181,6 @@ const submitQuiz = async () => {
   }
 }
 
-// Navigation and options
 const setActiveQuestion = (index) => {
   active_qes.value = index
 }
@@ -206,7 +199,6 @@ const clearOption = () => {
   selectedOptions.value[active_qes.value - 1] = null
 }
 
-// Load quiz
 onMounted(async () => {
   const quiz_id = route.params.quiz_id
   try {

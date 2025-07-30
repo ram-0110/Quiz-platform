@@ -2,7 +2,6 @@
   <div class="dashboard-container">
     <PageHeader title="Admin Dashboard" subtitle="Monitor user performance and system statistics" />
 
-    <!-- Summary Cards -->
     <div class="summary-section">
       <div class="summary-card">
         <div class="summary-icon"></div>
@@ -27,7 +26,6 @@
       </div>
     </div>
 
-    <!-- Top Scorers Section -->
     <div class="section">
       <h2 class="section-title">Top Scorers by Subject</h2>
       <div class="top-scorers-grid">
@@ -51,7 +49,6 @@
       </div>
     </div>
 
-    <!-- Average Scores Section -->
     <div class="section">
       <h2 class="section-title">Average Scores by Subject</h2>
       <div class="average-scores-grid">
@@ -70,7 +67,6 @@
       </div>
     </div>
 
-    <!-- Quiz Participation Section -->
     <div class="section">
       <h2 class="section-title">Recent Quiz Participation</h2>
       <div class="participation-table">
@@ -90,7 +86,6 @@
       </div>
     </div>
 
-    <!-- User Progress Section -->
     <div class="section">
       <h2 class="section-title">User Progress</h2>
       <div class="user-progress-section">
@@ -143,7 +138,6 @@
       </div>
     </div>
 
-    <!-- Inactive Users Section -->
     <div class="section">
       <h2 class="section-title">Inactive Users (30+ days)</h2>
       <div class="inactive-users-grid">
@@ -174,7 +168,6 @@ const inactiveUsers = ref([])
 const userProgress = ref([])
 const selectedUserId = ref('')
 
-// Utility functions
 const formatDate = (dateString) => {
   return new Date(dateString).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -183,7 +176,6 @@ const formatDate = (dateString) => {
   })
 }
 
-// API calls
 const fetchAllUsers = async () => {
   try {
     const response = await api.get('/admin/users')
@@ -241,7 +233,6 @@ const fetchUserProgress = async () => {
   }
 }
 
-// Initialize data on mount
 onMounted(async () => {
   await Promise.all([
     fetchAllUsers(),

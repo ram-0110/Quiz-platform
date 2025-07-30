@@ -1,6 +1,5 @@
 <template>
   <div class="d-flex vh-100">
-    <!-- Right Panel -->
     <div
       class="right-panel d-flex flex-column justify-content-center align-items-center bg-white text-dark px-4"
     >

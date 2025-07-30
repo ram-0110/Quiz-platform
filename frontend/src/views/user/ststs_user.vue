@@ -2,7 +2,6 @@
   <div class="dashboard-container">
     <PageHeader title="Statistics!" subtitle="Look at your performance" />
 
-    <!-- Filters -->
     <div class="filters-section">
       <div class="filter-group">
         <label for="subject" class="filter-label">Subject</label>
@@ -33,7 +32,6 @@
       </div>
     </div>
 
-    <!-- Charts -->
     <div class="charts-section">
       <div class="chart-container" v-if="subjectRef.length">
         <RadarChart :subjects="subjectRef" />
@@ -60,7 +58,6 @@ import api from '@/axios/axios'
 
 import PageHeader from '@/components/PageHeader.vue'
 import RadarChart from '@/components/RadarChart.vue'
-import VerticalBar from '@/components/VerticalBar.vue'
 import SubjectProgress from '@/components/SubjectProgress.vue'
 import BarChart from '@/components/BarChart.vue'
 
@@ -116,7 +113,7 @@ onMounted(async () => {
 <style scoped>
 .bar-chat {
   width: 100%;
-  max-width: 1200px; /* or more, depending on your preference */
+  max-width: 1200px; 
 }
 .charts-section {
   display: flex;

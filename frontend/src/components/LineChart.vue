@@ -68,12 +68,10 @@ const initChart = () => {
   }
 }
 
-// Initialize chart on mount
 onMounted(() => {
   initChart()
 })
 
-// Update chart when data changes
 watch(() => props.chartData, (newData) => {
   if (chartInstance) {
     chartInstance.data = newData
@@ -81,7 +79,6 @@ watch(() => props.chartData, (newData) => {
   }
 }, { deep: true })
 
-// Clean up before unmount
 onBeforeUnmount(() => {
   if (chartInstance) {
     chartInstance.destroy()

@@ -17,7 +17,6 @@
           <img src="../components/img/Logo.svg" alt="" width="75" height="40" />
         </a>
 
-        <!-- ✅ Admin Navbar -->
         <ul v-if="isAdmin" class="navbar-nav me-auto mb-2 mb-lg-0 mx-5">
           <li class="nav-item mx-2">
             <RouterLink class="nav-link" :class="{ active: route.path === '/admin' }" to="/admin">
@@ -38,7 +37,6 @@
           </li>
         </ul>
 
-        <!-- ✅ Regular User Navbar -->
         <ul v-else class="navbar-nav me-auto mb-2 mb-lg-0 mx-5">
           <li class="nav-item mx-2">
             <RouterLink
@@ -91,7 +89,6 @@ onMounted(() => {
   isAdmin.value = username === 'admin'
 })
 
-// ✅ Dynamically hide navbar for quiz start pages
 const showNavbar = computed(() => {
   return !route.path.startsWith('/quiz/start')
 })

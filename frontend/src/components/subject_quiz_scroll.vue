@@ -68,9 +68,9 @@
 import { ref, onMounted, nextTick, onBeforeUnmount } from 'vue'
 import QuizCardScroll from './quiz_card_scroll.vue'
 import api from '@/axios/axios'
-import { useToast } from 'vue-toastification' // ✅ import toast
+import { useToast } from 'vue-toastification' 
 
-const toast = useToast() // ✅ initialize toast
+const toast = useToast()
 
 const props = defineProps(['subject'])
 const obj_subj = ref(null)
@@ -91,7 +91,7 @@ onMounted(async () => {
 const scrollArea = ref(null)
 const showLeft = ref(false)
 const showRight = ref(true)
-const CARD_WIDTH = 210 // 200px card width + 10px gap
+const CARD_WIDTH = 210
 
 function scrollLeft() {
   if (!scrollArea.value) return
@@ -152,7 +152,6 @@ onBeforeUnmount(() => {
   padding-bottom: 1rem;
   border-bottom: 1px solid #e2e2e2;
 }
-/* Subject selector styles */
 .subject-selector {
   margin-bottom: 2rem;
   border: 1px solid #e2e2e2;
@@ -171,7 +170,7 @@ onBeforeUnmount(() => {
 
 .minimal-progress {
   height: 6px;
-  background-color: #f5f5f5; /* Slightly lighter grey background */
+  background-color: #f5f5f5;
   border-radius: 30px;
   overflow: hidden;
   width: 80%;
@@ -272,15 +271,15 @@ onBeforeUnmount(() => {
   overflow-x: auto;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* IE/Edge */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   flex: 1;
   position: relative;
   padding: 0.5rem 0;
 }
 
 .scroll-wrapper::-webkit-scrollbar {
-  display: none; /* Chrome, Safari */
+  display: none;
 }
 
 .scroll-container {

@@ -75,9 +75,7 @@
         <button class="btn btn-outline-dark" @click="addSingleOption">
           <i class="bi bi-plus-circle me-1"></i> Add single option
         </button>
-        <button class="btn btn-outline-dark" @click="addMultipleOption">
-          <i class="bi bi-plus-circle me-1"></i> Add multiple option
-        </button>
+
         <button class="btn btn-black" @click="saveQuiz" :disabled="!isFormValid">
           <i class="bi bi-save me-1"></i> Save Quiz
         </button>
@@ -92,9 +90,9 @@ import { useRoute, useRouter } from 'vue-router'
 import Single_Option from '@/components/admin/Single_Option.vue'
 import multiple_option from '@/components/admin/multiple_option.vue'
 import api from '@/axios/axios'
-import { useToast } from 'vue-toastification' // ✅ Import toast
+import { useToast } from 'vue-toastification'
 
-const toast = useToast() // ✅ Init toast
+const toast = useToast()
 const route = useRoute()
 const router = useRouter()
 const quizId = route.params.id
@@ -105,7 +103,7 @@ const quizName = ref('')
 const questions = ref([])
 const problem = ref([])
 
-let nextId = 1 // Track IDs for new questions
+let nextId = 1
 
 onMounted(async () => {
   try {
@@ -124,7 +122,7 @@ onMounted(async () => {
         question: item.question_statement,
         options: [item.option1, item.option2, item.option3, item.option4],
         correctOption: item.correct_option,
-        type: 'single-choice', // Or determine type if needed
+        type: 'single-choice',
       }
     })
 
@@ -132,7 +130,7 @@ onMounted(async () => {
     nextId = questions.value.length + 1
   } catch (error) {
     console.error('Error fetching quiz data:', error)
-    toast.error('Failed to load quiz data') // ✅ Error toast on load
+    toast.error('Failed to load quiz data')
   }
 })
 
@@ -181,7 +179,7 @@ const removeQuestionById = (id) => {
 
 const saveQuiz = async () => {
   if (!isFormValid.value) {
-    toast.warning('Please complete the form and add at least one question.') // ✅ replaces alert
+    toast.warning('Please complete the form and add at least one question.')
     return
   }
 
@@ -193,11 +191,11 @@ const saveQuiz = async () => {
       problem: problem.value,
     })
     console.log('Quiz saved successfully:', response.data)
-    toast.success('Quiz updated successfully!') // ✅ success toast
+    toast.success('Quiz updated successfully!')
     router.push('/admin')
   } catch (error) {
     console.error('Error saving quiz:', error)
-    toast.error('Failed to update quiz') // ✅ error toast
+    toast.error('Failed to update quiz')
   }
 }
 </script>

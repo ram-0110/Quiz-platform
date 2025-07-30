@@ -65,11 +65,11 @@ celery = make_celery(app)
 celery.conf.beat_schedule = {
     'send-daily-reminders': {
         'task': 'send_daily_reminders',
-        'schedule': timedelta(minutes=1),  # for testing; use crontab for production
+        'schedule': timedelta(minutes=1),  
     },
         'send-monthly-user-reports': {
         'task': 'send_monthly_user_reports',
-        'schedule': timedelta(minutes=1),  # for testing; use crontab for production
+        'schedule': timedelta(minutes=1),  
     },
 }
 celery.conf.timezone = 'UTC'
@@ -152,7 +152,6 @@ def is_rate_limited(key, limit, period):
     return False
 
 # --------------------------------------------------------------------------------
-# Add OPTIONS method handler for routes that need preflight requests
 @app.route('/api/login', methods=['OPTIONS'])
 def login_options():
     return '', 200
@@ -174,7 +173,6 @@ def home_options():
 
 @app.before_request
 def update_last_seen():
-    # Only try to verify JWT for routes that actually need it
     try:
         verify_jwt_in_request(optional=True)
         user_id = get_jwt_identity()
@@ -184,7 +182,6 @@ def update_last_seen():
                 user.last_seen = datetime.utcnow()
                 db.session.commit()
     except Exception as e:
-        # Don't fail the request if JWT isn't present or invalid
         pass
 
 
@@ -241,7 +238,6 @@ def login():
     email = data.get('email')
     password = data.get('password')
 
-    # ✅ Static Admin Login
     if email == 'admin@gmail.com' and password == 'admin':
         access_token = create_access_token(identity=email)
         refresh_token = create_refresh_token(identity=email)
@@ -251,7 +247,6 @@ def login():
             'username': 'admin'
         }), 200
 
-    # ✅ Normal user from database
     user = User.query.filter_by(email=email).first()
 
     if not user or not check_password_hash(user.password, password):
@@ -290,7 +285,6 @@ def dashboard():
         'subjects': subject_list
     }
 
-    # Cache the response for 5 minutes (300 seconds)
     
     return jsonify(response_data), 200
 
@@ -360,13 +354,11 @@ def about():
 # --------------------------------------------------------------------------------
 
 def get_unopted_subjects(user_id):
-    # Get subject IDs already opted by the user
     opted_subject_ids = (
         db.session.query(user_subject.c.subject_id)
         .filter(user_subject.c.user_id == user_id)
     )
 
-    # Now get subjects that are NOT in the opted list
     unopted_subjects = Subject.query.filter(~Subject.id.in_(opted_subject_ids)).all()
     return unopted_subjects
 
@@ -392,7 +384,7 @@ def home():
         return jsonify({'message': 'User not found'}), 404
 
     scores_data = []
-    for score in user.attempts:  # ← this is valid because of your existing relationship
+    for score in user.attempts: 
         quiz = score.quiz
         chapter = quiz.chapter
         subject = chapter.subject
@@ -437,7 +429,6 @@ def download_user_data():
     if not user:
         return jsonify({"error": "User not found"}), 404
 
-    # Query all quiz attempts for the user with related data
     attempts = db.session.query(
         Subject.name.label('subject'),
         Chapter.name.label('chapter'),
@@ -453,18 +444,15 @@ def download_user_data():
      .order_by(Score.timestamp.desc())\
      .all()
 
-    # Create CSV in memory
     output = io.StringIO()
     writer = csv.writer(output)
     
-    # Write CSV header
     writer.writerow([
         'Subject', 'Chapter', 'Quiz Name', 
         'Quiz Date', 'Attempt Time', 
         'Score', 'Remarks'
     ])
     
-    # Write data rows
     for attempt in attempts:
         writer.writerow([
             attempt.subject,
@@ -476,7 +464,6 @@ def download_user_data():
             attempt.remarks or ''
         ])
     
-    # Prepare response with CSV attachment
     output.seek(0)
     return Response(
         output,
@@ -499,7 +486,6 @@ def dashboard_sub_quiz():
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    # Get quiz_ids already attempted by the user
     attempted_quiz_ids = {score.quiz_id for score in user.attempts}
 
     chapters = Chapter.query.filter_by(subject_id=subject_id).all()
@@ -685,7 +671,6 @@ def update_quiz():
     current_user = get_jwt_identity()
     data = request.get_json()
 
-    # Extract data
     subject_name = data.get("subject")
     chapter_name = data.get("chapter")
     quiz_name = data.get("quiz")
@@ -696,29 +681,23 @@ def update_quiz():
 
     print("Updating quiz for:", subject_name, chapter_name, quiz_name)
 
-    # Validate subject
     subject = Subject.query.filter_by(name=subject_name).first()
     if not subject:
         return jsonify({'message': 'Subject not found'}), 404
 
-    # Validate chapter
     chapter = Chapter.query.filter_by(name=chapter_name, subject_id=subject.id).first()
     if not chapter:
         return jsonify({'message': 'Chapter not found'}), 404
 
-    # Find existing quiz
     quiz = Quiz.query.filter_by(quiz_name=quiz_name, chapter_id=chapter.id).first()
     if not quiz:
         return jsonify({'message': 'Quiz not found'}), 404
 
-    # Optional: update quiz metadata
-    quiz.date_of_quiz = datetime.utcnow()  # or leave unchanged
+    quiz.date_of_quiz = datetime.utcnow()  
     db.session.commit()
 
-    # Clear old questions
     Question.query.filter_by(quiz_id=quiz.id).delete()
 
-    # Add new questions
     for question in problems:
         q_type = question.get('type')
         q_text = question.get('question')
@@ -905,15 +884,16 @@ def start_quiz(quiz_id):
 
     return jsonify(question_list), 200
 
-
 @app.route('/api/quiz/submit/<int:quiz_id>/result', methods=['POST', 'OPTIONS'])
-@jwt_required(optional=True)  # optional=True allows OPTIONS without auth
+@jwt_required(optional=True)
 def submit_quiz(quiz_id):
     if request.method == 'OPTIONS':
-        return jsonify({'ok': True}), 200  # respond to preflight
+        return jsonify({'ok': True}), 200
 
     current_user_email = get_jwt_identity()
     data = request.get_json()
+
+    print(data)
     
     if not data or 'answers' not in data:
         return jsonify({"error": "Missing answers"}), 400
@@ -927,21 +907,39 @@ def submit_quiz(quiz_id):
     if existing_score:
         return jsonify({"message": "You have already submitted this quiz."}), 409
 
-
     answers = data['answers']
+    print("Answers received:", answers)
     score = 0
 
     for ans in answers:
         question_id = ans.get('question_id')
         selected_option = ans.get('selected_option')
+        
         if selected_option is None:
             continue  # skip unanswered questions
 
+        # Convert from 0-indexed to 1-indexed
+        selected_option = str(selected_option + 1)
+        
         question = db.session.get(Question, question_id)
+        
+        # Debug the question object
+        print(f"Question object: {question}")
+        print(f"Question exists: {question is not None}")
+        if question:
+            print(f"Correct option type: {type(question.correct_option)}, value: {question.correct_option}")
+        print(f"Selected option type: {type(selected_option)}, value: {selected_option}")
+        
         if question and question.correct_option == selected_option:
             score += 1
+            print(f"Question ID: {question_id}, Selected Option: {selected_option}, Correct Option: {question.correct_option}, ✓ CORRECT! Score: {score}")
+        else:
+            if not question:
+                print(f"Question ID: {question_id} - QUESTION NOT FOUND")
+            else:
+                print(f"Question ID: {question_id}, Selected Option: {selected_option}, Correct Option: {question.correct_option}, ✗ INCORRECT. Score: {score}")
+                print(f"Comparison: {question.correct_option} == {selected_option} -> {question.correct_option == selected_option}")
 
-    # Store the score
     new_score = Score(
         quiz_id=quiz_id,
         user_id=user.id,
@@ -951,14 +949,12 @@ def submit_quiz(quiz_id):
     db.session.add(new_score)
     db.session.commit()
 
-    print(score)
+    print(f"Final score: {score}")
     return jsonify({
         "message": "Quiz submitted successfully!",
         "score": score,
         "total_questions": len(answers)
     }), 200
-
-
 @app.route('/api/quiz/result/<int:quiz_id>', methods=['GET'])
 @jwt_required(optional=True) 
 def get_quiz_result(quiz_id):
@@ -1099,7 +1095,7 @@ def is_rate_limited(key, limit, period):
 GOOGLE_CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQAu4KDusQ/messages?key=AIzaSyDdI0hCZtE6vySjMm-WEfRq3CPzqKqqsHI&token=qhI9GKlTCLyGFJg7q3N6eewKZSMzXQI8TAEWa1QVRvM"
 @celery.task(name='send_daily_reminders')
 def send_daily_reminders():
-    print("🔁 Task STARTED at", datetime.utcnow())
+    print(" Task STARTED at", datetime.utcnow())
 
     now_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
     today_start_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -1113,7 +1109,7 @@ def send_daily_reminders():
     total_reminded = 0
 
     for user in users:
-        print(f"🔍 Checking user: {user.username}")
+        print(f" Checking user: {user.username}")
         user_last_seen = user.last_seen or datetime.min  
 
         if user_last_seen.tzinfo is not None:
@@ -1121,37 +1117,37 @@ def send_daily_reminders():
 
         if user_last_seen < today_start_utc or new_quiz_count > 0:
             message = {
-                "text": f"📢 Hi {user.username}, there are new quizzes or you haven’t visited today. Come back and check what's new!"
+                "text": f" Hi {user.username}, there are new quizzes or you haven’t visited today. Come back and check what's new!"
             }
             try:
-                print(f"📨 Sending to {user.username}")
+                print(f" Sending to {user.username}")
                 response = requests.post(GOOGLE_CHAT_WEBHOOK_URL, json=message)
                 if response.status_code == 200:
                     total_reminded += 1
                 else:
-                    print(f"❌ Failed for {user.username}: {response.text}")
+                    print(f" Failed for {user.username}: {response.text}")
             except Exception as e:
-                print(f"⚠️ Exception while sending to {user.username}: {e}")
+                print(f" Exception while sending to {user.username}: {e}")
 
-    print(f"✅ Reminders sent to {total_reminded} users at {now_ist.strftime('%H:%M:%S')} IST")
+    print(f" Reminders sent to {total_reminded} users at {now_ist.strftime('%H:%M:%S')} IST")
     return f"Reminders sent to {total_reminded} users."
 
 
 @celery.task(name='send_monthly_user_reports')
 def send_monthly_user_reports():
-    print("📊 Generating Monthly Reports")
+    print("Generating Monthly Reports")
 
     now = datetime.utcnow()
     one_month_ago = now - timedelta(days=2)  # for testing
 
     users = User.query.all()
-    print(f"🧑‍💻 Users in DB: {[u.username for u in users]}")
+    print(f" Users in DB: {[u.username for u in users]}")
 
     reports_sent = 0
 
     for user in users:
         try:
-            print(f"🧪 Processing user: {user.username}")
+            print(f" Processing user: {user.username}")
 
             recent_attempts = Score.query.filter(
                 Score.user_id == user.id,
@@ -1168,36 +1164,36 @@ def send_monthly_user_reports():
                     subject_names.add(attempt.quiz.chapter.subject.name)
 
             if total_attempts == 0:
-                report_message = f"""👤 Report for **{user.username}**:
-📅 Monthly Summary
-⚠️ No quiz attempts in the last month.
-🕐 Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
+                report_message = f""" Report for **{user.username}**:
+ Monthly Summary
+ No quiz attempts in the last month.
+ Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
 """
             else:
                 report_message = f"""👤 Report for **{user.username}**:
-📅 Monthly Summary
-🧪 Quizzes Taken: {total_attempts}
-🎯 Total Score: {total_score}
-📚 Subjects Covered: {', '.join(subject_names) if subject_names else 'None'}
-📝 Quizzes Attempted: {', '.join(quizzes_taken) if quizzes_taken else 'None'}
-🕐 Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
+ Monthly Summary
+ Quizzes Taken: {total_attempts}
+ Total Score: {total_score}
+ Subjects Covered: {', '.join(subject_names) if subject_names else 'None'}
+ Quizzes Attempted: {', '.join(quizzes_taken) if quizzes_taken else 'None'}
+ Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
 """
 
             message = {"text": report_message}
-            print(f"📤 Sending report for {user.username}")
+            print(f" Sending report for {user.username}")
             response = requests.post(GOOGLE_CHAT_WEBHOOK_URL, json=message)
 
             if response.status_code == 200:
                 reports_sent += 1
             else:
-                print(f"❌ Failed to send for {user.username}: {response.text}")
+                print(f"Failed to send for {user.username}: {response.text}")
 
             time.sleep(1.5)  # prevent chat message collapsing
 
         except Exception as e:
-            print(f"❌ Error while processing {user.username}: {e}")
+            print(f" Error while processing {user.username}: {e}")
 
-    print(f"✅ Monthly reports sent for {reports_sent} users at {now.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    print(f" Monthly reports sent for {reports_sent} users at {now.strftime('%Y-%m-%d %H:%M:%S')} UTC")
     return f"Monthly reports sent for {reports_sent} users."
 
 

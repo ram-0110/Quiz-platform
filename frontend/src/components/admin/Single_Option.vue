@@ -5,7 +5,6 @@
       {{ type === 'single-choice' ? 'Question' : 'Multiple Choice Question' }}
     </h2>
 
-    <!-- Question Input -->
     <textarea
       name="question"
       id="question"
@@ -19,7 +18,6 @@
       v-model="question"
     ></textarea>
 
-    <!-- Options Input -->
     <div class="d-flex justify-content-between align-items-center mb-3">
       <h3 class="fw-bold mb-0 text-black">Options</h3>
       <small class="text-muted">All fields required</small>
@@ -43,7 +41,6 @@
           />
         </div>
 
-        <!-- Checkbox for multiple-choice -->
         <div v-if="type === 'multiple-choice'" class="form-check ms-2">
           <input
             class="form-check-input"
@@ -57,7 +54,6 @@
       </div>
     </div>
 
-    <!-- Dropdown for single correct option -->
     <div v-if="type === 'single-choice'" class="mb-3">
       <h3 class="fw-bold mb-0 text-black">Correct Option</h3>
       <div class="input-group mt-2">
@@ -69,12 +65,10 @@
       </div>
     </div>
 
-    <!-- Info for missing correct selection -->
     <div class="alert alert-info mt-3" v-if="type === 'multiple-choice' && !hasCorrectOption">
       <i class="bi bi-info-circle me-2"></i>Please select at least one correct option
     </div>
 
-    <!-- Remove button -->
     <div class="d-flex justify-content-end mt-4">
       <button class="btn btn-outline-dark me-2" @click="$emit('remove')">
         <i class="bi bi-trash me-1"></i>Remove
@@ -127,7 +121,6 @@ function toggleCorrectOption(index) {
   }
 }
 
-// Emit structured question data to parent
 watch(
   [question, options, correctOption, correctOptions],
   () => {
@@ -153,7 +146,6 @@ watch(
 </script>
 
 <style scoped>
-/* Reuse shared styles from your original files */
 .question-card {
   border: 1px solid #e2e2e2;
   border-radius: 12px;

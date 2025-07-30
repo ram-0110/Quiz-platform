@@ -96,17 +96,14 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('access_token')
   const username = localStorage.getItem('username')
 
-  // Redirect logged-in users away from login/signup
   if (token && publicPages.includes(to.name)) {
     return next({ name: 'dashboard' })
   }
 
-  // Block access to all routes if not logged in
   if (!token && !publicPages.includes(to.name)) {
     return next({ name: 'login' })
   }
 
-  // Block admin pages for non-admin users
   if (to.meta.isAdmin && username !== 'admin') {
     return next({ name: 'dashboard' }) // or a 403 page
   }
