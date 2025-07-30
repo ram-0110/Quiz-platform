@@ -25,6 +25,15 @@
             </RouterLink>
           </li>
           <li class="nav-item mx-2">
+            <RouterLink
+              class="nav-link"
+              :class="{ active: route.path === '/admin/stats' }"
+              to="/admin/stats"
+            >
+              Stats
+            </RouterLink>
+          </li>
+          <li class="nav-item mx-2">
             <button class="nav-link" @click="logout">Logout</button>
           </li>
         </ul>

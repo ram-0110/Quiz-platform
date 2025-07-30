@@ -11,6 +11,7 @@ import admin_dashbord from '@/views/admin/admin_dashbord.vue'
 import add_quiz from '@/views/admin/add_quiz.vue'
 import edit_quiz from '@/views/admin/edit_quiz.vue'
 import result from '@/views/user/ResultPage.vue'
+import admin_stats from '@/views/admin/admin_stats.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -81,6 +82,12 @@ const router = createRouter({
       component: edit_quiz,
       meta: { isAdmin: true },
     },
+    {
+      path: '/admin/stats',
+      name: 'admin-stats',
+      component: admin_stats,
+      meta: { isAdmin: true },
+    }
   ],
 })
 
@@ -101,7 +108,6 @@ router.beforeEach((to, from, next) => {
 
   // Block admin pages for non-admin users
   if (to.meta.isAdmin && username !== 'admin') {
-    
     return next({ name: 'dashboard' }) // or a 403 page
   }
 

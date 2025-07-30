@@ -1,9 +1,29 @@
 <template>
   <div class="dashboard-container">
     <header class="header">
-      <div>
-        <h1 class="title">Explore!</h1>
-        <p class="subtitle">Your Quiz Performances</p>
+      <div class="header-content">
+        <div>
+          <h1 class="title">Explore!</h1>
+          <p class="subtitle">Your Quiz Performances</p>
+        </div>
+
+        <button @click="downloadCSV" :disabled="downloadLoading" class="download-btn">
+          <span v-if="downloadLoading" class="loading-spinner"></span>
+          <svg
+            v-else
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7,10 12,15 17,10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          {{ downloadLoading ? 'Downloading...' : 'Download CSV' }}
+        </button>
       </div>
     </header>
 
@@ -35,6 +55,11 @@
         <p class="timestamp">Taken on: {{ score.timestamp }}</p>
       </div>
     </div>
+
+    <!-- Success/Error Messages -->
+    <div v-if="downloadMessage" :class="['message', downloadMessage.type]">
+      {{ downloadMessage.text }}
+    </div>
   </div>
 </template>
 
@@ -43,10 +68,69 @@ import { ref, onMounted } from 'vue'
 import PageHeader from '@/components/PageHeader.vue'
 import api from '@/axios/axios'
 import { useRouter } from 'vue-router'
+
 const scores = ref([])
 const loading = ref(true)
+const downloadLoading = ref(false)
+const downloadMessage = ref(null)
 
 const router = useRouter()
+async function downloadCSV() {
+  downloadLoading.value = true
+  downloadMessage.value = null
+
+  try {
+    const response = await api.get('/download-user-data', {
+      responseType: 'blob',
+    })
+
+    // Handle filename extraction more safely
+    let filename = 'quiz_results.csv'
+    if (response.headers['content-disposition']) {
+      const contentDisposition = response.headers['content-disposition']
+      const filenameMatch = contentDisposition.match(/filename\*?=["']?([^"';]+)["']?/)
+      if (filenameMatch && filenameMatch[1]) {
+        filename = decodeURIComponent(filenameMatch[1])
+      } else {
+        // Fallback: Extract filename without encoding
+        const simpleMatch = contentDisposition.match(/filename=["']?([^"';]+)["']?/)
+        if (simpleMatch && simpleMatch[1]) {
+          filename = simpleMatch[1]
+        }
+      }
+    }
+
+    // Create download link
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', filename)
+    document.body.appendChild(link)
+    link.click()
+
+    // Clean up
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+
+    downloadMessage.value = {
+      text: 'Download started successfully!',
+      type: 'success',
+    }
+  } catch (error) {
+    console.error('Download error:', error)
+    downloadMessage.value = {
+      text: error.response?.data?.error || 'Failed to download data. Please try again.',
+      type: 'error',
+    }
+  } finally {
+    downloadLoading.value = false
+
+    // Clear message after 3 seconds
+    setTimeout(() => {
+      downloadMessage.value = null
+    }, 3000)
+  }
+}
 
 function goToResult(quizId) {
   router.push(`/quiz/result/${quizId}`)
@@ -64,6 +148,86 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.download-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background-color: #3b82f6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.download-btn:hover:not(:disabled) {
+  background-color: #2563eb;
+  transform: translateY(-1px);
+}
+
+.download-btn:disabled {
+  background-color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.message {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+  z-index: 1000;
+  animation: slideIn 0.3s ease;
+}
+
+.message.success {
+  background-color: #10b981;
+  color: white;
+}
+
+.message.error {
+  background-color: #ef4444;
+  color: white;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
 .score-card {
   border: 1px solid #e5e5e5;
   border-radius: 8px;

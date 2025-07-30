@@ -1,7 +1,6 @@
 <!-- add_quiz.vue -->
 
 <template>
-  <div>{{ problem }}</div>
   <div class="dashboard-container bg-white border rounded-lg p-4">
     <div class="header border-bottom pb-3 mb-4">
       <div class="d-flex justify-content-between align-items-center">

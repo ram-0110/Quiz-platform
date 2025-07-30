@@ -1,7 +1,8 @@
 from flask import (
-    Flask, render_template, request, redirect, url_for, flash, session,
-    send_file, jsonify
+    Flask,  request, jsonify, Response
 )
+import csv
+import io
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
@@ -10,6 +11,7 @@ from flask_jwt_extended import (
     JWTManager, create_access_token, jwt_required, get_jwt_identity,
     create_refresh_token
 )
+from sqlalchemy import func,desc
 from flask_redis import FlaskRedis
 from celery import Celery
 import uuid
@@ -17,6 +19,9 @@ import requests
 import json
 import pytz
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from celery.schedules import crontab
+import time
+
 
 
 
@@ -60,6 +65,10 @@ celery = make_celery(app)
 celery.conf.beat_schedule = {
     'send-daily-reminders': {
         'task': 'send_daily_reminders',
+        'schedule': timedelta(minutes=1),  # for testing; use crontab for production
+    },
+        'send-monthly-user-reports': {
+        'task': 'send_monthly_user_reports',
         'schedule': timedelta(minutes=1),  # for testing; use crontab for production
     },
 }
@@ -416,6 +425,70 @@ def home():
     }), 200
 
 # --------------------------------------------------------------------------------
+
+@app.route('/api/download-user-data', methods=['GET'])
+@jwt_required()
+def download_user_data():
+    # Get current user identity from JWT
+    current_user_email = get_jwt_identity()
+    
+    # Find user by email
+    user = User.query.filter_by(email=current_user_email).first()
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Query all quiz attempts for the user with related data
+    attempts = db.session.query(
+        Subject.name.label('subject'),
+        Chapter.name.label('chapter'),
+        Quiz.quiz_name,
+        Quiz.date_of_quiz,
+        Score.timestamp.label('attempt_time'),
+        Score.total_score,
+        Score.remarks
+    ).join(Quiz, Score.quiz_id == Quiz.id)\
+     .join(Chapter, Quiz.chapter_id == Chapter.id)\
+     .join(Subject, Chapter.subject_id == Subject.id)\
+     .filter(Score.user_id == user.id)\
+     .order_by(Score.timestamp.desc())\
+     .all()
+
+    # Create CSV in memory
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Write CSV header
+    writer.writerow([
+        'Subject', 'Chapter', 'Quiz Name', 
+        'Quiz Date', 'Attempt Time', 
+        'Score', 'Remarks'
+    ])
+    
+    # Write data rows
+    for attempt in attempts:
+        writer.writerow([
+            attempt.subject,
+            attempt.chapter,
+            attempt.quiz_name,
+            attempt.date_of_quiz.strftime('%Y-%m-%d %H:%M') if attempt.date_of_quiz else '',
+            attempt.attempt_time.strftime('%Y-%m-%d %H:%M:%S'),
+            attempt.total_score,
+            attempt.remarks or ''
+        ])
+    
+    # Prepare response with CSV attachment
+    output.seek(0)
+    return Response(
+        output,
+        mimetype='text/csv',
+        headers={
+            'Content-Disposition': 
+                f'attachment; filename={user.username}_quiz_results.csv'
+        }
+    )
+# --------------------------------------------------------------------------------
+
+
 @app.route('/api/dashboard-sub-quiz')
 @jwt_required()
 def dashboard_sub_quiz():
@@ -1028,14 +1101,11 @@ GOOGLE_CHAT_WEBHOOK_URL = "https://chat.googleapis.com/v1/spaces/AAQAu4KDusQ/mes
 def send_daily_reminders():
     print("🔁 Task STARTED at", datetime.utcnow())
 
-    # Convert current time to IST
     now_ist = datetime.now(pytz.timezone('Asia/Kolkata'))
     today_start_ist = now_ist.replace(hour=0, minute=0, second=0, microsecond=0)
 
-    # Convert IST midnight to UTC, then strip tzinfo to make it naive
     today_start_utc = today_start_ist.astimezone(pytz.utc).replace(tzinfo=None)
 
-    # Get all quizzes created after today_start_utc
     new_quizzes = Quiz.query.filter(Quiz.date_of_quiz >= today_start_utc).all()
     new_quiz_count = len(new_quizzes)
 
@@ -1043,9 +1113,9 @@ def send_daily_reminders():
     total_reminded = 0
 
     for user in users:
-        user_last_seen = user.last_seen or datetime.min  # fallback if None
+        print(f"🔍 Checking user: {user.username}")
+        user_last_seen = user.last_seen or datetime.min  
 
-        # Ensure user_last_seen is naive for comparison
         if user_last_seen.tzinfo is not None:
             user_last_seen = user_last_seen.replace(tzinfo=None)
 
@@ -1067,10 +1137,226 @@ def send_daily_reminders():
     return f"Reminders sent to {total_reminded} users."
 
 
+@celery.task(name='send_monthly_user_reports')
+def send_monthly_user_reports():
+    print("📊 Generating Monthly Reports")
+
+    now = datetime.utcnow()
+    one_month_ago = now - timedelta(days=2)  # for testing
+
+    users = User.query.all()
+    print(f"🧑‍💻 Users in DB: {[u.username for u in users]}")
+
+    reports_sent = 0
+
+    for user in users:
+        try:
+            print(f"🧪 Processing user: {user.username}")
+
+            recent_attempts = Score.query.filter(
+                Score.user_id == user.id,
+                Score.timestamp >= one_month_ago
+            ).all()
+
+            total_attempts = len(recent_attempts)
+            total_score = sum(attempt.total_score or 0 for attempt in recent_attempts)
+            quizzes_taken = list({attempt.quiz.quiz_name for attempt in recent_attempts if attempt.quiz})
+
+            subject_names = set()
+            for attempt in recent_attempts:
+                if attempt.quiz and attempt.quiz.chapter and attempt.quiz.chapter.subject:
+                    subject_names.add(attempt.quiz.chapter.subject.name)
+
+            if total_attempts == 0:
+                report_message = f"""👤 Report for **{user.username}**:
+📅 Monthly Summary
+⚠️ No quiz attempts in the last month.
+🕐 Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
+"""
+            else:
+                report_message = f"""👤 Report for **{user.username}**:
+📅 Monthly Summary
+🧪 Quizzes Taken: {total_attempts}
+🎯 Total Score: {total_score}
+📚 Subjects Covered: {', '.join(subject_names) if subject_names else 'None'}
+📝 Quizzes Attempted: {', '.join(quizzes_taken) if quizzes_taken else 'None'}
+🕐 Timestamp: {now.strftime('%Y-%m-%d %H:%M:%S')} UTC
+"""
+
+            message = {"text": report_message}
+            print(f"📤 Sending report for {user.username}")
+            response = requests.post(GOOGLE_CHAT_WEBHOOK_URL, json=message)
+
+            if response.status_code == 200:
+                reports_sent += 1
+            else:
+                print(f"❌ Failed to send for {user.username}: {response.text}")
+
+            time.sleep(1.5)  # prevent chat message collapsing
+
+        except Exception as e:
+            print(f"❌ Error while processing {user.username}: {e}")
+
+    print(f"✅ Monthly reports sent for {reports_sent} users at {now.strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    return f"Monthly reports sent for {reports_sent} users."
+
+
+
+# Add this endpoint to fetch all users
+@app.route('/api/admin/users', methods=['GET'])
+def get_all_users():
+    users = User.query.filter_by(is_admin=False).all()
+    return jsonify([{
+        'id': user.id,
+        'username': user.username,
+        'email': user.email
+    } for user in users])
+
+# Fixed top scorers endpoint
+@app.route('/api/admin/top-scorers', methods=['GET'])
+def top_scorers_per_subject():
+    result = []
+    subjects = Subject.query.all()
+
+    for subject in subjects:
+        subject_scores = (
+            db.session.query(
+                User.username, 
+                func.sum(Score.total_score).label('total_score')
+            )
+            .join(Score, User.id == Score.user_id)
+            .join(Quiz, Quiz.id == Score.quiz_id)
+            .join(Chapter, Chapter.id == Quiz.chapter_id)
+            .filter(Chapter.subject_id == subject.id)
+            .group_by(User.id, User.username)  # Fixed group by
+            .order_by(desc('total_score'))
+            .limit(3)
+            .all()
+        )
+
+        result.append({
+            'subject': subject.name,
+            'top_scorers': [{
+                'username': s.username, 
+                'total_score': float(s.total_score)  # Ensure number type
+            } for s in subject_scores]
+        })
+
+    return jsonify(result)
+
+# Fixed average scores endpoint
+@app.route('/api/admin/average-scores', methods=['GET'])
+def average_scores_per_subject():
+    results = []
+    subjects = Subject.query.all()
+
+    for subject in subjects:
+        # Get average score as float
+        avg_score = db.session.query(
+            func.avg(Score.total_score).label('avg_score')
+        ).join(Quiz, Quiz.id == Score.quiz_id)\
+         .join(Chapter, Chapter.id == Quiz.chapter_id)\
+         .filter(Chapter.subject_id == subject.id)\
+         .scalar() or 0
+
+        results.append({
+            'subject': subject.name,
+            'average_score': round(float(avg_score), 2)  # Ensure float conversion
+        })
+
+    return jsonify(results)
+
+# Fixed quiz participation endpoint
+@app.route('/api/admin/quiz-participation', methods=['GET'])
+def quiz_participation():
+    # Get last 10 quizzes with attempt counts
+    quizzes = db.session.query(
+        Quiz.quiz_name,
+        Quiz.date_of_quiz,
+        func.count(Score.id).label('attempts')
+    ).outerjoin(Score, Score.quiz_id == Quiz.id)\
+     .group_by(Quiz.id)\
+     .order_by(Quiz.date_of_quiz.desc())\
+     .limit(10)\
+     .all()
+
+    return jsonify([{
+        'quiz_name': q.quiz_name,
+        'date': q.date_of_quiz.strftime("%Y-%m-%d"),
+        'attempts': q.attempts
+    } for q in quizzes])
+
+# Fixed inactive users endpoint
+@app.route('/api/admin/inactive-users', methods=['GET'])
+def inactive_users():
+    threshold = datetime.utcnow() - timedelta(days=30)
+    inactive = User.query.filter(
+        User.last_seen < threshold, 
+        User.is_admin == False
+    ).all()
+
+    return jsonify([{
+        'username': u.username, 
+        'email': u.email, 
+        'last_seen': u.last_seen.isoformat()  # ISO format for frontend
+    } for u in inactive])
+
+# Fixed user progress endpoint
+@app.route('/api/admin/user-progress/<int:user_id>', methods=['GET'])  # Use int for ID
+def user_progress(user_id):
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    progress = []
+    # Get all subjects the user has attempted
+    subjects = db.session.query(Subject)\
+        .join(Chapter, Chapter.subject_id == Subject.id)\
+        .join(Quiz, Quiz.chapter_id == Chapter.id)\
+        .join(Score, Score.quiz_id == Quiz.id)\
+        .filter(Score.user_id == user_id)\
+        .distinct(Subject.id)\
+        .all()
+
+    for subject in subjects:
+        chapters = []
+        # Get all chapters in this subject
+        subject_chapters = Chapter.query.filter_by(subject_id=subject.id).all()
+        
+        for chapter in subject_chapters:
+            # Count quizzes in chapter
+            total_quizzes = Quiz.query.filter_by(chapter_id=chapter.id).count()
+            
+            # Count completed quizzes
+            completed_quizzes = db.session.query(Score)\
+                .join(Quiz, Quiz.id == Score.quiz_id)\
+                .filter(
+                    Score.user_id == user_id,
+                    Quiz.chapter_id == chapter.id
+                )\
+                .count()
+                
+            progress_percent = 0
+            if total_quizzes > 0:
+                progress_percent = round((completed_quizzes / total_quizzes) * 100, 2)
+                
+            chapters.append({
+                'chapter': chapter.name,
+                'completed_quizzes': completed_quizzes,
+                'total_quizzes': total_quizzes,
+                'progress_percent': progress_percent
+            })
+        
+        progress.append({
+            'subject': subject.name,
+            'chapters': chapters
+        })
+    
+    return jsonify(progress)
+
 # ------------------------------- App Runner -----------------------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
 
 
 
-#testing 1234
